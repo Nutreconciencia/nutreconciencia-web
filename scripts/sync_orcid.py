@@ -369,7 +369,7 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
 </div></section>
 </main>
 <script>
-document.querySelectorAll('.mobile-menu-toggle').forEach(btn=>{btn.addEventListener('click',()=>{const nav=btn.closest('.nav');const open=nav.classList.toggle('nav-open');btn.setAttribute('aria-expanded',open?'true':'false');});});
+document.querySelectorAll('.mobile-menu-toggle').forEach(btn=>{{btn.addEventListener('click',()=>{{const nav=btn.closest('.nav');const open=nav.classList.toggle('nav-open');btn.setAttribute('aria-expanded',open?'true':'false');}});}});
 </script>
 </body></html>"""
 
