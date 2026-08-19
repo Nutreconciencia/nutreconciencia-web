@@ -1,32 +1,25 @@
 name: Sync ORCID publications
-
 "on":
   workflow_dispatch:
   schedule:
     - cron: "20 6 * * *"
-
 permissions:
   contents: write
-
 jobs:
   sync-orcid:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - name: Sync ORCID publications
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-5.6-luna
         run: python scripts/sync_orcid.py
-
       - name: Commit changes
         run: |
           git config user.name "nutreconciencia-orcid-bot"
