@@ -34,6 +34,3 @@ jobs:
           git add articulos
           git diff --cached --quiet || git commit -m "chore: sync ORCID publications"
           git push
-
-if __name__ == "__main__":
-    main()
