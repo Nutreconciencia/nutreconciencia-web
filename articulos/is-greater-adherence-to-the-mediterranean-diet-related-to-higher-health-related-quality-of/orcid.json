@@ -1,7 +1,7 @@
 {
-  "title": "Is greater adherence to the Mediterranean diet related to higher health-related quality of life among children and adolescents? A systematic review and meta-analysis",
+  "title": "Is greater adherence to the Mediterranean diet related to higher health-related quality of life among children and adolescents? A systematic review and meta-analysis.",
   "year": "2025",
-  "journal": "European Journal of Pediatrics",
+  "journal": "European journal of pediatrics",
   "authors": [
     "José Francisco López-Gil",
     "Desirée Victoria-Montesinos",
@@ -12,12 +12,16 @@
     "Gonzalo Quesada-Fernández",
     "Brendon Stubbs",
     "Lee Smith",
-    "Stefanos N. Kales"
+    "Stefanos N Kales"
   ],
   "doi": "10.1007/s00431-025-06298-z",
   "pmid": "40705083",
   "abstract": "UNLABELLED: Adherence to the Mediterranean diet (MedDiet) has been linked to better physical and mental health outcomes. However, its relationship with health-related quality of life (HRQoL) in children and adolescents has not been quantitatively assessed. To examine the association between adherence to the MedDiet and HRQoL in children and adolescents through a systematic review and meta-analysis of observational studies. PubMed, Scopus, Web of Science, and Cochrane Library were searched from inception through November 1, 2024. Observational studies assessing the association between MedDiet adherence and HRQoL in participants aged ≤ 19 years. Only studies using validated tools for both exposure and outcome were included. Two reviewers independently extracted data and assessed study quality using the National Heart, Lung, and Blood Institute tool. A random-effects model with a restricted maximum likelihood estimator was applied. Preferred Reporting Items for Systematic Reviews and Meta-Analyses (PRISMA) guidelines were followed. The primary outcome was the Spearman's correlation coefficient (r) between MedDiet adherence and HRQoL. Twenty-four studies (n = 28,692; weighted mean age = 12.6 years) from ten countries were included. Higher adherence to the MedDiet was associated with better HRQoL (r = 0.22; 95% confidence interval [CI], 0.13 to 0.30; p < 0.001), although effect sizes were modest and heterogeneity was high (inconsistency index [I2] = 99.8%). Subgroup and sensitivity analyses confirmed the robustness of findings across HRQoL domains (e.g., physical, emotional, school-related). Studies with unadjusted models reported stronger associations than those with covariate-adjusted models. CONCLUSIONS: Greater adherence to the MedDiet is modestly associated with higher HRQoL in children and adolescents. These findings support dietary interventions as a component of youth well-being strategies, although further longitudinal and interventional research is needed. WHAT IS KNOWN: • The Mediterranean diet (MedDiet) has been associated with various physical and mental health benefits in children and adolescents, including lower obesity risk and better academic performance. • Previous reviews have suggested a positive relationship between MedDiet adherence and health-related quality of life (HRQoL), but no meta-analysis had quantified this association. WHAT IS NEW: • This is the first meta-analysis to quantitatively assess the association between MedDiet adherence and HRQoL in youth, including data from 24 studies and nearly 29,000 participants. • Higher adherence to the MedDiet was modestly but consistently associated with better HRQoL across physical, emotional, social, school-related, and parental domains, despite high heterogeneity.",
-  "publication_types": [],
+  "publication_types": [
+    "Journal Article",
+    "Systematic Review",
+    "Meta-Analysis"
+  ],
   "orcid": "0000-0003-0553-6210",
   "orcid_work_id": "188903864"
 }

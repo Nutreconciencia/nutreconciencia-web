@@ -1,7 +1,7 @@
 {
-  "title": "Isocaloric substitution of animal protein with plant protein and its impact on all-cause, cardiovascular, and cancer mortality: A systematic review and meta-analysis",
+  "title": "Isocaloric substitution of animal protein with plant protein and its impact on all-cause, cardiovascular, and cancer mortality: A systematic review and meta-analysis.",
   "year": "2026",
-  "journal": "Clinical Nutrition",
+  "journal": "Clinical nutrition (Edinburgh, Scotland)",
   "authors": [
     "Gabriel Barrantes-Espinola",
     "Piero Alberti",
@@ -12,7 +12,11 @@
   "doi": "10.1016/j.clnu.2026.106654",
   "pmid": "41996864",
   "abstract": "BACKGROUND AND AIMS: Epidemiological evidence indicates that isocaloric substitution of animal-protein sources with plant-protein sources may reduce all-cause mortality (ACM), cardiovascular mortality (CVM), and cancer mortality (CM). However, the impact of substituting different proportions of animal-protein with plant-protein remains unclear. This systematic review and meta-analysis aimed to evaluate the effects of isocaloric substitution of animal-protein with plant-protein at two levels-3% and 5% of total caloric value (TCV)-on ACM, CVM and CM, and to assess whether these effects differ between substitution levels. METHODS: Three databases-PubMed, Embase and Web of Science-were systematically searched up to December 2025. Prospective observational studies with multivariable adjustment evaluating isocaloric substitution of 3% and 5% of animal-protein with plant-protein on ACM, CVM and CM were included. Risk of bias was assessed using ROBINS-E. Hazard ratios (HR) for mortality outcomes were pooled using a random-effects model, with heterogeneity assessed with Tau2, Chi2 and I2., Statistical analysis was performed using Review Manager 5.4. RESULTS: Nine cohort studies including 1,036,799 participants and 19, 904,866 person-years of follow-up were analyzed. Pooled results from studies examining 3% and 5% substitution of TCV from animal-protein with plant-protein significantly reduced ACM (HR 0.91; 95% CI 0.87-0.94; p < 0.00001; I2 = 77%) with no significant difference between substitution levels (p = 0.96). CVM was significantly reduced with both 3% (HR 0.88; 95% CI 0.83-0.93; p < 0.00001; I2 = 60%) and 5% substitution (HR 0.77; 95% CI 0.70-0.86; p < 0.00001; I2 = 0%), with a significant subgroup difference (p = 0.03). CM was significantly reduced with 3% substitution (HR 0.95; 95% CI 0.92-0.98; p = 0.003; I2 = 8%), with a significant subgroup difference (p = 0.008). CONCLUSIONS: Isocaloric substitution of animal-protein with plant-protein is associated with lower ACM, CVM and CM, with stronger cardiovascular benefits observed at the 5% substitution level. These findings support the potential role of increased plant-protein intake in dietary strategies aimed at reducing mortality risk. REGISTRATION: PROSPERO, CRD42024614889.",
-  "publication_types": [],
+  "publication_types": [
+    "Journal Article",
+    "Systematic Review",
+    "Meta-Analysis"
+  ],
   "orcid": "0000-0003-0553-6210",
   "orcid_work_id": "210573584"
 }
