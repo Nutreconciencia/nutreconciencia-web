@@ -172,61 +172,26 @@ def openai_summary(title: str, abstract: str, journal: str, year: str) -> dict:
 
     prompt = f"""
 Eres editor científico de una web de investigación en nutrición.
-Tu tarea NO es escribir un resumen genérico. Debes extraer del abstract datos
-concretos del estudio y convertirlos en una ficha breve, específica y fiel.
 
-REGLAS OBLIGATORIAS
-1. Usa únicamente la información contenida en el título y abstract proporcionados.
-2. No inventes ningún dato, población, resultado, limitación o interpretación.
-3. No uses frases vacías como "se evaluó el impacto", "podría ser relevante" o
-   "el estudio aporta información" si puedes decir exactamente qué se estudió.
-4. Conserva cifras, tamaños muestrales, duración, comparadores, outcomes y
-   diferencias estadísticas cuando estén disponibles.
-5. Si el abstract no aporta un dato, dilo claramente; no lo rellenes con
-   conocimiento externo.
-6. La respuesta debe sonar como una ficha de divulgación científica rigurosa,
-   no como un abstract traducido palabra por palabra.
-7. Escribe en CASTELLANO, pero mantén el título original del artículo.
+Resume este artículo EN CASTELLANO a partir EXCLUSIVAMENTE del título y abstract.
+No inventes datos. No generalices cuando el abstract permite dar cifras o detalles.
+Conserva n, población, intervención/comparador, duración, outcome principal y
+resultados numéricos cuando estén disponibles.
 
-FORMATO
-Devuelve SOLO JSON válido con estas claves:
-lead, question, methods, findings, interpretation, limitations
+Devuelve EXACTAMENTE estas 6 líneas y NADA MÁS.
+Una sola línea por campo. No uses viñetas, no uses JSON, no uses Markdown.
 
-question:
-- Empieza con "El objetivo fue..." o "El estudio evaluó..."
-- Debe identificar exactamente qué se comparó, en quién y qué outcome principal
-  se estudió, cuando esos datos estén en el abstract.
-- Máximo 2 frases.
+LEAD: 1-2 frases sobre qué aporta exactamente el estudio.
+QUESTION: Empieza por "El objetivo fue..." e indica qué se comparó, en quién y el outcome principal.
+METHODS: Diseño, n, población, grupos/intervenciones y duración, solo si aparecen.
+FINDINGS: Resultados principales con cifras y diferencias entre grupos cuando existan.
+INTERPRETATION: Qué significan razonablemente los resultados sin sobreinterpretarlos.
+LIMITATIONS: Solo cautelas/limitaciones explícitas. Si el abstract no las menciona,
+escribe exactamente: "El abstract no detalla limitaciones específicas; para valorarlas es necesario consultar el artículo completo."
 
-methods:
-- Indica el diseño, n, población, grupos/intervenciones y duración cuando aparezcan.
-- Incluye si fue aleatorizado, controlado, paralelo/crossover, isocalórico, etc.
-- Máximo 3 frases.
-
-findings:
-- Resume los resultados concretos, priorizando los outcomes principales.
-- Incluye cifras y diferencias entre grupos cuando estén disponibles.
-- Máximo 3 frases.
-
-interpretation:
-- Explica qué significan los resultados SIN ir más allá del abstract.
-- Distingue resultado observado de causalidad o de implicación clínica.
-- Máximo 2 frases.
-
-limitations:
-- NO copies el abstract.
-- Extrae únicamente limitaciones/cautelas que estén explícitas en el abstract.
-- Si el abstract no menciona limitaciones, escribe exactamente:
-  "El abstract no detalla limitaciones específicas; para valorarlas es necesario consultar el artículo completo."
-- Máximo 2 frases.
-
-lead:
-- 1-2 frases que expliquen de forma concreta qué aporta el estudio, evitando
-  generalidades.
-
-Título: {title}
-Revista: {journal}
-Año: {year}
+TÍTULO: {title}
+REVISTA: {journal}
+AÑO: {year}
 
 ABSTRACT:
 {abstract}
@@ -264,23 +229,37 @@ ABSTRACT:
         text = "".join(chunks)
 
     text = text.strip()
-    try:
-        result = json.loads(text)
-        if isinstance(result, dict):
-            return result
-    except Exception:
-        pass
+    if not text:
+        print("OpenAI summary returned empty output.")
+        return {}
 
-    m = re.search(r"\{.*\}", text, flags=re.S)
-    if m:
-        try:
-            result = json.loads(m.group(0))
-            if isinstance(result, dict):
-                return result
-        except Exception:
-            pass
+    result = {}
+    labels = {
+        "LEAD": "lead",
+        "QUESTION": "question",
+        "METHODS": "methods",
+        "FINDINGS": "findings",
+        "INTERPRETATION": "interpretation",
+        "LIMITATIONS": "limitations",
+    }
 
-    return {}
+    for line in text.splitlines():
+        line = line.strip()
+        for label, key_name in labels.items():
+            prefix = label + ":"
+            if line.upper().startswith(prefix):
+                result[key_name] = line[len(prefix):].strip()
+                break
+
+    required = ("lead", "question", "methods", "findings", "interpretation", "limitations")
+    missing = [k for k in required if not result.get(k)]
+    if missing:
+        # Do not silently turn a failed model response into generic content.
+        print("OpenAI summary parse incomplete; missing:", ", ".join(missing))
+        print("OpenAI raw output:", text[:2000])
+        return {}
+
+    return result
 
 def journal_brand(journal: str) -> tuple[str, str]:
     x = (journal or "").lower()
@@ -367,7 +346,7 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
 <meta name="description" content="{esc(lead[:155])}">
 <meta name="author" content="Miguel López Moreno">
 <link rel="canonical" href="https://nutreconciencia.com/articulos/{esc(slug)}/">
-<link rel="stylesheet" href="../../assets/styles.css?v=37">
+<link rel="stylesheet" href="../../assets/styles.css?v=38">
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(lead[:200])}">
 <meta property="og:type" content="article">
@@ -744,11 +723,13 @@ def render_index_card(meta: dict, slug: str) -> str:
 
 def update_research_index() -> None:
     """
-    Keep /articulos/index.html synchronized with canonical ORCID publications.
+    Synchronize /articulos/index.html without relying on a brittle closing marker.
 
-    Existing paper-cover cards are deduplicated by exact href and normalized
-    title. Redirect/noindex folders are ignored. Missing canonical ORCID cards
-    are appended once.
+    - Locates the paper grid from <div class="journal-grid" id="paperGrid"> to the
+      next closing </div></section></main> sequence.
+    - Deduplicates cards by href and normalized title.
+    - Ignores redirect/noindex article folders.
+    - Adds missing canonical ORCID cards.
     """
     index_file = ART / "index.html"
     if not index_file.exists():
@@ -756,21 +737,24 @@ def update_research_index() -> None:
         return
 
     page = index_file.read_text(encoding="utf-8")
-    grid_marker = '<div class="journal-grid" id="paperGrid">'
-    close_marker = '</div></div></div></main>'
 
+    grid_marker = '<div class="journal-grid" id="paperGrid">'
     start = page.find(grid_marker)
     if start == -1:
         print("Research grid marker not found; skipping index synchronization.")
         return
 
-    end = page.find(close_marker, start)
-    if end == -1:
-        print("Research grid closing marker not found; skipping index synchronization.")
+    grid_start = start + len(grid_marker)
+
+    # Find the end of the grid using the actual static structure, while allowing
+    # whitespace/newlines between the closing div/section/main tags.
+    close_re = re.compile(r'</div>\s*</div>\s*</section>\s*</main>', re.S)
+    close_match = close_re.search(page, grid_start)
+    if not close_match:
+        print("Research grid closing structure not found; skipping index synchronization.")
         return
 
-    grid_start = start + len(grid_marker)
-    grid_inner = page[grid_start:end]
+    grid_inner = page[grid_start:close_match.start()]
 
     card_pattern = re.compile(r'<a class="paper-cover"(?P<attrs>.*?)</a>', re.S)
     cards = card_pattern.findall(grid_inner)
@@ -839,6 +823,7 @@ def update_research_index() -> None:
     for _, _, card, href, title_key in candidates:
         if href in seen_hrefs or (title_key and title_key in seen_titles):
             continue
+
         unique_cards.append(card)
         seen_hrefs.add(href)
         if title_key:
@@ -846,14 +831,19 @@ def update_research_index() -> None:
         added += 1
 
     new_grid = "\n" + "\n".join(unique_cards) + "\n"
-    updated_page = page[:grid_start] + new_grid + page[end:]
+    updated_page = (
+        page[:grid_start]
+        + new_grid
+        + page[close_match.start():]
+    )
 
     if updated_page != page:
         index_file.write_text(updated_page, encoding="utf-8")
 
     print(
         f"Research index synchronized: removed {removed} duplicate cards; "
-        f"added {added} missing publication cards; total cards kept {len(unique_cards)}."
+        f"added {added} missing publication cards; "
+        f"total cards kept {len(unique_cards)}."
     )
 
 def main():
