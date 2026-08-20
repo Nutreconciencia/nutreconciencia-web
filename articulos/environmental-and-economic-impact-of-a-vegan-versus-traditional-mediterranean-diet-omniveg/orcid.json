@@ -1,11 +1,19 @@
 {
   "title": "Environmental and economic impact of a vegan versus traditional mediterranean diet: OMNIVEG study",
   "year": "2026",
-  "journal": "European Journal of Nutrition",
-  "authors": [],
+  "journal": "European journal of nutrition",
+  "authors": [
+    "Miguel López-Moreno",
+    "Paula Marrero-Fernández",
+    "Carla Galiana",
+    "Millán Aguilar-Navarro",
+    "Alejandro Muñoz",
+    "Jorge Gutiérrez-Hellín",
+    "Ujué Fresán"
+  ],
   "doi": "10.1007/s00394-026-03939-3",
   "pmid": "41843153",
-  "abstract": "Abstract Background Shifting dietary patterns toward more sustainable dietary practices is essential for addressing both chronic disease risk and environmental degradation. While the Mediterranean diet (MedDiet) is widely recognized for its health benefits, its environmental impact and cost may be higher than fully plant-based dietary patterns due to the inclusion of animal-derived foods. This secondary data analysis aimed to compare the environmental impacts and retail food costs of a traditional MedDiet and a vegan MedDiet, using dietary intake data from a controlled crossover trial. Methods In the OMNIVEG study, 14 healthy, physically active men followed a traditional MedDiet for 3 weeks and a vegan MedDiet for 4 weeks, with a 1-week washout. Environmental impacts were assessed using Life Cycle Assessment while food costs were calculated from national retail price data. Results The vegan MedDiet significantly reduced environmental impacts related to human health (− 54.5%), ecosystems (− 50.9%), and resource use (− 43.4%) compared to the traditional MedDiet ( p &lt; 0.01). Retail food cost was also reduced by 16.3% ( p &lt; 0.05). Differences were mainly attributable to the exclusion of animal-based foods; no significant differences in environmental impact were observed for shared food groups. Conclusions Replacing animal products with plant-based foods in a Mediterranean dietary framework can enhance environmental sustainability and reduce food costs. These findings support the promotion of whole plant-based diets as a viable strategy for sustainable and affordable nutrition.",
+  "abstract": "BACKGROUND: Shifting dietary patterns toward more sustainable dietary practices is essential for addressing both chronic disease risk and environmental degradation. While the Mediterranean diet (MedDiet) is widely recognized for its health benefits, its environmental impact and cost may be higher than fully plant-based dietary patterns due to the inclusion of animal-derived foods. This secondary data analysis aimed to compare the environmental impacts and retail food costs of a traditional MedDiet and a vegan MedDiet, using dietary intake data from a controlled crossover trial. METHODS: In the OMNIVEG study, 14 healthy, physically active men followed a traditional MedDiet for 3 weeks and a vegan MedDiet for 4 weeks, with a 1-week washout. Environmental impacts were assessed using Life Cycle Assessment while food costs were calculated from national retail price data. RESULTS: The vegan MedDiet significantly reduced environmental impacts related to human health (− 54.5%), ecosystems (− 50.9%), and resource use (− 43.4%) compared to the traditional MedDiet (p < 0.01). Retail food cost was also reduced by 16.3% (p < 0.05). Differences were mainly attributable to the exclusion of animal-based foods; no significant differences in environmental impact were observed for shared food groups. CONCLUSIONS: Replacing animal products with plant-based foods in a Mediterranean dietary framework can enhance environmental sustainability and reduce food costs. These findings support the promotion of whole plant-based diets as a viable strategy for sustainable and affordable nutrition.",
   "orcid": "0000-0003-0553-6210",
   "orcid_work_id": "208996626"
 }
