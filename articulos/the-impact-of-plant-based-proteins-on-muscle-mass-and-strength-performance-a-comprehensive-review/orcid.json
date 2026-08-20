@@ -1,10 +1,14 @@
 {
   "title": "The Impact of Plant-Based Proteins on Muscle Mass and Strength Performance: A Comprehensive Review",
   "year": "2025",
-  "journal": "Current Nutrition Reports",
-  "authors": [],
+  "journal": "Current nutrition reports",
+  "authors": [
+    "Miguel López-Moreno",
+    "Ariel Kraselnik"
+  ],
   "doi": "10.1007/s13668-025-00628-1",
   "pmid": "39982647",
-  "abstract": "",
-  "orcid": "0000-0003-0553-6210"
+  "abstract": "PURPOSE OF REVIEW: Plant-based diets, which prioritize plant foods and limit or exclude animal-based products, have gained popularity due to their potential health and environmental benefits. While these diets are recognized as nutritionally adequate for all life stages, plant-based proteins have traditionally been considered less effective for muscle growth and athletic performance compared to animal-based proteins. This study aims to assess the quality of plant-based protein sources and their effects on muscle mass gain and strength performance. RECENT FINDINGS: Although plant-based proteins may have lower digestibility and amino acid quality, combining protein sources and employing different processing techniques, such as cooking or fermentation, can improve their bioavailability. Animal protein supplementation has been associated with greater gains in lean mass and muscle strength. However, focusing exclusively on isolated protein supplementation fails to reflect the habitual dietary patterns, which typically involve consuming diverse protein sources throughout the day. Consequently, there is a growing interest in examining the broader impact of comprehensive dietary patterns on muscle mass and strength. Recent research suggests that when consumed in adequate amounts and with appropriate combinations, plant-based proteins can effectively support muscle protein synthesis and strength performance when consumed in adequate amounts and with appropriate combinations. When derived from diverse sources and consumed in sufficient quantities, plant-based proteins can effectively support muscle protein synthesis and promote strength development. Further research is needed to assess the impact of plant-based diets on muscle mass and strength in elite athletes and older adults, particularly those at risk of sarcopenia. Long-term studies are essential for a more comprehensive understanding of the sustained effects of plant-based nutrition on these outcomes.",
+  "orcid": "0000-0003-0553-6210",
+  "orcid_work_id": "181272160"
 }
