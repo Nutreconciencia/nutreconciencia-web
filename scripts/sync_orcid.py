@@ -466,26 +466,31 @@ def render_index_card(meta: dict, slug: str) -> str:
 
 
 def update_research_index() -> None:
-    """Update /articulos/index.html with missing canonical ORCID-managed cards."""
+    """
+    Synchronize /articulos/index.html with canonical ORCID-managed publications.
+
+    We deliberately use an exact href check against the whole document rather
+    than building a global href set. This avoids false positives and makes the
+    behavior deterministic.
+    """
     index_file = ART / "index.html"
     if not index_file.exists():
         print("Research index not found; skipping index synchronization.")
         return
 
     page = index_file.read_text(encoding="utf-8")
-    start_marker = '<div class="journal-grid" id="paperGrid">'
-    end_marker = '</div></div></section></main>'
-    start = page.find(start_marker)
+    grid_marker = '<div class="journal-grid" id="paperGrid">'
+    close_marker = '</div></div></section></main>'
+
+    start = page.find(grid_marker)
     if start == -1:
         print("Research grid marker not found; skipping index synchronization.")
         return
-    end = page.find(end_marker, start)
+
+    end = page.find(close_marker, start)
     if end == -1:
         print("Research grid closing marker not found; skipping index synchronization.")
         return
-
-    grid_inner = page[start + len(start_marker):end]
-    existing_hrefs = set(re.findall(r'href="([^"]+/index\.html)"', grid_inner))
 
     new_cards = []
     for folder in sorted(ART.iterdir()):
@@ -496,18 +501,24 @@ def update_research_index() -> None:
         if not meta:
             continue
 
-        existing_page = folder / "index.html"
-        if existing_page.exists():
-            try:
-                existing_html = existing_page.read_text(encoding="utf-8", errors="ignore")
-                if 'name="robots" content="noindex,follow"' in existing_html:
-                    continue
-            except Exception:
-                pass
+        page_file = folder / "index.html"
+        if not page_file.exists():
+            continue
+
+        try:
+            html_page = page_file.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            html_page = ""
+
+        # Skip redirect/noindex duplicate folders created by dedupe_orcid.py.
+        if 'name="robots" content="noindex,follow"' in html_page:
+            continue
 
         slug = folder.name
-        href = f"{slug}/index.html"
-        if href in existing_hrefs:
+        exact_href = f'href="{slug}/index.html"'
+
+        # Check the actual published research index, not a derived href set.
+        if exact_href in page:
             continue
 
         new_cards.append(
@@ -518,14 +529,19 @@ def update_research_index() -> None:
             )
         )
 
-    new_cards.sort(key=lambda x: (x[0], x[1]), reverse=True)
+    new_cards.sort(key=lambda item: (item[0], item[1]), reverse=True)
 
     if not new_cards:
         print("Research index already contains all canonical ORCID publications.")
         return
 
-    new_html = "\n" + "\n".join(card for _, _, card in new_cards) + "\n"
-    updated_page = page[:start + len(start_marker)] + new_html + grid_inner + page[end:]
+    insertion = "\n" + "\n".join(card for _, _, card in new_cards) + "\n"
+    updated_page = (
+        page[:start + len(grid_marker)]
+        + insertion
+        + page[start + len(grid_marker):]
+    )
+
     index_file.write_text(updated_page, encoding="utf-8")
     print(f"Research index updated: added {len(new_cards)} publication cards.")
 
