@@ -1,11 +1,20 @@
 {
   "title": "Effectiveness of immersive virtual reality and exercise on clinical, clinimetric and biomarker variables in rotator cuff-related shoulder pain patients: A study protocol for a multicentre randomized clinical trial (IVR- RCRSP-Rehab)",
   "year": "2026",
-  "journal": "PLOS One",
-  "authors": [],
+  "journal": "PloS one",
+  "authors": [
+    "Alberto Roldán-Ruiz",
+    "Claudio Villagrán-Soto",
+    "Gabriele Bertotti",
+    "Miguel López-Moreno",
+    "Sandra Sánchez-Jorge",
+    "Vicente Fernández-Ruiz",
+    "Manuel Rodríguez-Aragón",
+    "Javier Guerra-Armas"
+  ],
   "doi": "10.1371/journal.pone.0341215",
-  "pmid": "",
-  "abstract": "Introduction Shoulder pain is a common reason for physiotherapy consultations, and the high prevalence of rotator cuff-related shoulder pain (RCRSP) calls for novel approaches. Immersive virtual reality (IVR) offers an innovative treatment option to reduce pain, improve mobility and function in RCRSP. This study aims to compare the effectiveness of combining IVR with standard treatment versus standard treatment alone on clinical variables, clinimetric measures, and biomarkers in individuals with chronic RCRSP. Materials and methods A single-blind, multicentre randomized clinical trial will be conducted. Participants will be randomly assigned to two groups: the control group will undergo a three-month exercise program, while the intervention group will receive an IVR program for the first month, followed by the same exercise program for the control group during second and third months. Clinical, clinimetric, and biomarker variables will be assessed at baseline and at follow-ups at 1, 2, and 3 months. Results This study will shed light on the effectiveness of the combined program of immersive virtual reality with exercise and exercise program alone in chronic RCRSP patients. Measurements of clinical, clinimetric, and biomarker variables will help to explore how these interventions may influence this clinical population within a comprehensive perspective. Conclusions This study protocol outlines a novel approach to managing chronic rotator cuff-related shoulder pain by integrating IVR with exercise-based physiotherapy. The results will provide valuable insights into the additive effects of IVR on variables such as pain, function, psychosocial factors and biological markers, potentially informing future rehabilitation strategies and enhancing patient outcomes in musculoskeletal care.",
+  "pmid": "41592018",
+  "abstract": "INTRODUCTION: Shoulder pain is a common reason for physiotherapy consultations, and the high prevalence of rotator cuff-related shoulder pain (RCRSP) calls for novel approaches. Immersive virtual reality (IVR) offers an innovative treatment option to reduce pain, improve mobility and function in RCRSP. This study aims to compare the effectiveness of combining IVR with standard treatment versus standard treatment alone on clinical variables, clinimetric measures, and biomarkers in individuals with chronic RCRSP. MATERIALS AND METHODS: A single-blind, multicentre randomized clinical trial will be conducted. Participants will be randomly assigned to two groups: the control group will undergo a three-month exercise program, while the intervention group will receive an IVR program for the first month, followed by the same exercise program for the control group during second and third months. Clinical, clinimetric, and biomarker variables will be assessed at baseline and at follow-ups at 1, 2, and 3 months. RESULTS: This study will shed light on the effectiveness of the combined program of immersive virtual reality with exercise and exercise program alone in chronic RCRSP patients. Measurements of clinical, clinimetric, and biomarker variables will help to explore how these interventions may influence this clinical population within a comprehensive perspective. CONCLUSIONS: This study protocol outlines a novel approach to managing chronic rotator cuff-related shoulder pain by integrating IVR with exercise-based physiotherapy. The results will provide valuable insights into the additive effects of IVR on variables such as pain, function, psychosocial factors and biological markers, potentially informing future rehabilitation strategies and enhancing patient outcomes in musculoskeletal care.",
   "orcid": "0000-0003-0553-6210",
   "orcid_work_id": "207996415"
 }
