@@ -315,100 +315,231 @@ def extract_structured_sections(text: str) -> dict:
     return sections
 
 
+
+def split_sentences(text: str) -> list[str]:
+    text = re.sub(r"\s+", " ", (text or "").strip())
+    if not text:
+        return []
+    # Keep common abbreviations from splitting too aggressively.
+    protected = (
+        text.replace("e.g.", "e.g§")
+            .replace("i.e.", "i.e§")
+            .replace("U.S.", "U§S§")
+    )
+    sentences = re.split(r'(?<=[.!?])\s+', protected)
+    return [
+        s.replace("e.g§", "e.g.").replace("i.e§", "i.e.").replace("U§S§", "U.S.").strip()
+        for s in sentences if s.strip()
+    ]
+
+
+def extract_labeled_sections(text: str) -> dict:
+    labels = {
+        "question": ["OBJECTIVES", "OBJECTIVE", "AIMS", "AIM", "PURPOSE", "BACKGROUND AND OBJECTIVES"],
+        "methods": ["METHODS", "METHOD", "DESIGN"],
+        "findings": ["RESULTS", "FINDINGS", "MAIN RESULTS"],
+        "interpretation": ["CONCLUSION", "CONCLUSIONS", "INTERPRETATION", "IMPLICATIONS"],
+        "limitations": ["LIMITATIONS", "STRENGTHS AND LIMITATIONS"],
+    }
+
+    matches = []
+    for field, variants in labels.items():
+        for label in variants:
+            m = re.search(rf'(?<!\w){re.escape(label)}\s*(?::|-)\s*', text, flags=re.I)
+            if m:
+                matches.append((m.start(), m.end(), field))
+                break
+
+    matches.sort(key=lambda x: x[0])
+    sections = {}
+    for i, (s, e, field) in enumerate(matches):
+        stop = matches[i + 1][0] if i + 1 < len(matches) else len(text)
+        sections[field] = text[e:stop].strip(" ;.-")
+    return sections
+
+
+def heuristic_question(text: str) -> str:
+    sentences = split_sentences(text)
+    objective_markers = [
+        "evaluated", "evaluate", "assessed", "assess", "examined", "examine",
+        "investigated", "investigate", "determined", "determine", "compared",
+        "compare", "aimed to", "aim was", "purpose was", "sought to",
+        "effect of", "effects of", "association between"
+    ]
+    for s in sentences:
+        low = s.lower()
+        if any(marker in low for marker in objective_markers):
+            return s
+    # Avoid background-only lead when no explicit objective can be found.
+    return ""
+
+
+def heuristic_methods(text: str) -> str:
+    sentences = split_sentences(text)
+    method_markers = [
+        "randomized", "randomised", "controlled", "trial", "crossover",
+        "cross-over", "parallel", "participants", "women", "men", "adults",
+        "patients", "assigned to", "were assigned", "for 6 weeks", "for 12 weeks",
+        "prospective", "retrospective", "observational"
+    ]
+    selected = []
+    for s in sentences:
+        low = s.lower()
+        if any(marker in low for marker in method_markers):
+            selected.append(s)
+        if len(selected) >= 3:
+            break
+    return " ".join(selected)
+
+
+def heuristic_findings(text: str) -> str:
+    sentences = split_sentences(text)
+    result_markers = [
+        "result", "reduced", "reduction", "increased", "increase", "decreased",
+        "decrease", "higher", "lower", "greater", "difference", "95% ci",
+        "p =", "p<", "p <", "odds ratio", "risk", "association"
+    ]
+    selected = []
+    for s in sentences:
+        low = s.lower()
+        if any(marker in low for marker in result_markers):
+            selected.append(s)
+        if len(selected) >= 4:
+            break
+    return " ".join(selected)
+
+
+def heuristic_conclusion(text: str) -> str:
+    sentences = split_sentences(text)
+    markers = [
+        "these findings", "these results", "suggest", "support", "conclude",
+        "conclusion", "may", "could", "associated with", "indicate"
+    ]
+    for s in reversed(sentences):
+        if any(marker in s.lower() for marker in markers):
+            return s
+    return sentences[-1] if sentences else ""
+
+
+def translate_to_spanish(text: str) -> str:
+    """Translate a short generated snippet using a no-key public endpoint."""
+    text = (text or "").strip()
+    if not text:
+        return ""
+
+    # Preserve text already mostly in Spanish.
+    lower = f" {text.lower()} "
+    markers = [
+        " el ", " la ", " los ", " las ", " un ", " una ",
+        " fue ", " fueron ", " durante ", " estudio ", " resultados ",
+        " objetivo ", " evaluó ", " comparó ", " participantes "
+    ]
+    if sum(m in lower for m in markers) >= 2:
+        return text
+
+    chunks = []
+    remaining = text
+    while remaining:
+        chunk = remaining[:1600]
+        if len(remaining) > 1600:
+            split_at = max(chunk.rfind(". "), chunk.rfind("; "), chunk.rfind(" "))
+            if split_at > 500:
+                chunk = remaining[:split_at + 1]
+
+        try:
+            url = "https://translate.googleapis.com/translate_a/single?" + urllib.parse.urlencode({
+                "client": "gtx", "sl": "en", "tl": "es", "dt": "t", "q": chunk
+            })
+            data = json.loads(get_text(url))
+            translated = "".join(
+                part[0] for part in data[0]
+                if isinstance(part, list) and part and part[0]
+            )
+            chunks.append(translated or chunk)
+        except Exception as exc:
+            print("Translation fallback:", exc)
+            chunks.append(chunk)
+
+        remaining = remaining[len(chunk):]
+
+    return " ".join(chunks).strip()
+
+
 def scientific_summary_from_abstract(title: str, abstract: str, journal: str, year: str, article_type: str = "research") -> dict:
-    """
-    Build Spanish summary from abstract, adapting the structure to article type.
-    """
     text = clean_abstract(abstract)
     if not text:
         return {}
 
-    sections = extract_structured_sections(text)
+    sections = extract_labeled_sections(text)
 
+    # For structured research abstracts, prefer labeled sections and use
+    # sentence-level heuristics as fallbacks.
     if article_type == "research":
-        question_raw = sections.get("question", "")
-        if question_raw:
-            sentences = re.split(r'(?<=[.!?])\s+', question_raw)
-            candidates = [
-                s.strip() for s in sentences
-                if any(term in s.lower() for term in [
-                    "evaluat", "assess", "aim", "determin", "examin",
-                    "compar", "investigat", "effect of", "effect on"
+        q_raw = sections.get("question") or heuristic_question(text)
+        m_raw = sections.get("methods") or heuristic_methods(text)
+        f_raw = sections.get("findings") or heuristic_findings(text)
+        i_raw = sections.get("interpretation") or heuristic_conclusion(text)
+        l_raw = sections.get("limitations", "")
+
+        # Strip common background text accidentally included at the beginning
+        # of an unstructured objective/aim sentence.
+        if q_raw:
+            sents = split_sentences(q_raw)
+            q_candidates = [
+                s for s in sents
+                if any(k in s.lower() for k in [
+                    "evaluat", "assess", "exam", "investigat", "compar",
+                    "aim", "purpose", "effect of", "effect on", "association"
                 ])
             ]
-            if candidates:
-                question_raw = " ".join(candidates[:2])
+            if q_candidates:
+                q_raw = " ".join(q_candidates[:2])
 
-        question = translate_to_spanish(question_raw) if question_raw else (
-            "El abstract no presenta un apartado de objetivos explícito; "
-            "la pregunta del estudio debe reconstruirse a partir del título y del artículo completo."
+        question = translate_to_spanish(q_raw) if q_raw else (
+            "El objetivo del estudio no pudo reconstruirse con suficiente detalle a partir del abstract disponible."
         )
-        if question_raw and not question.lower().startswith(("el objetivo", "el estudio", "esta investigación")):
+        if q_raw and not question.lower().startswith(("el objetivo", "el estudio", "esta investigación")):
             question = "El objetivo fue " + question.rstrip(".") + "."
 
-        methods = translate_to_spanish(sections.get("methods", "")) if sections.get("methods") else (
-            "El abstract no presenta un apartado de métodos estructurado; "
-            "para describir con precisión el diseño y la muestra es necesario consultar la publicación original."
+        methods = translate_to_spanish(m_raw) if m_raw else (
+            "El abstract disponible no aporta suficiente información para describir con precisión el diseño y la muestra."
         )
-        findings = translate_to_spanish(sections.get("findings", "")) if sections.get("findings") else (
-            "El abstract no presenta un apartado de resultados estructurado; "
-            "los resultados concretos deben consultarse en la publicación original."
+        findings = translate_to_spanish(f_raw) if f_raw else (
+            "El abstract disponible no aporta suficiente información para resumir los resultados con precisión."
         )
-        interpretation = translate_to_spanish(sections.get("interpretation", "")) if sections.get("interpretation") else (
-            "El abstract no presenta una conclusión diferenciada; "
-            "la interpretación debe limitarse a los resultados descritos y al diseño del estudio."
+        interpretation = translate_to_spanish(i_raw) if i_raw else (
+            "La interpretación debe limitarse a lo que permiten sostener el diseño y los resultados descritos en el abstract."
         )
-        limitations = translate_to_spanish(sections.get("limitations", "")) if sections.get("limitations") else ""
+        limitations = translate_to_spanish(l_raw) if l_raw else ""
 
-        lead_source = sections.get("findings") or sections.get("question") or ""
-        lead = translate_to_spanish(lead_source)
-        if lead and len(lead) > 550:
-            lead = lead[:547].rsplit(" ", 1)[0] + "..."
-        if not lead:
-            lead = "Resumen de los principales elementos descritos en el abstract."
+        lead_source = f_raw or q_raw or i_raw
+        lead = translate_to_spanish(lead_source) if lead_source else (
+            "La ficha resume los principales elementos científicos descritos en la publicación."
+        )
 
         return {
             "mode": "research",
-            "lead": lead,
+            "lead": lead[:650],
             "question": question[:1000],
             "methods": methods[:1300],
-            "findings": findings[:1600],
-            "interpretation": interpretation[:1000],
+            "findings": findings[:1700],
+            "interpretation": interpretation[:1100],
             "limitations": limitations[:1000],
         }
 
-    # Review / perspective / editorial-style paper:
-    # Do not pretend it has participants or an intervention when it does not.
-    sentences = re.split(r'(?<=[.!?])\s+', text)
-    first = " ".join(sentences[:3]).strip()
+    # Reviews / perspectives / commentaries.
+    first_sentences = split_sentences(text)[:4]
+    scope = sections.get("question") or " ".join(first_sentences[:2])
+    synthesis = sections.get("findings") or " ".join(first_sentences[2:5])
+    conclusion = sections.get("interpretation") or heuristic_conclusion(text)
 
-    if article_type == "review":
-        scope = sections.get("question") or first
-        synthesis = sections.get("findings") or sections.get("interpretation") or " ".join(sentences[2:6]).strip()
-        conclusion = sections.get("interpretation") or (
-            sentences[-1] if sentences else ""
-        )
-        return {
-            "mode": "review",
-            "lead": translate_to_spanish(synthesis)[:700],
-            "question": translate_to_spanish(scope)[:1100],
-            "methods": "",
-            "findings": translate_to_spanish(synthesis)[:1600],
-            "interpretation": translate_to_spanish(conclusion)[:1100],
-            "limitations": translate_to_spanish(sections.get("limitations", ""))[:1000],
-        }
-
-    # Commentary / perspective / editorial / unstructured narrative:
-    scope = first
-    synthesis = " ".join(sentences[3:7]).strip() or first
-    conclusion = sections.get("interpretation") or (sentences[-1] if sentences else "")
     return {
-        "mode": "commentary",
-        "lead": translate_to_spanish(scope)[:700],
-        "question": translate_to_spanish(scope)[:1100],
+        "mode": article_type,
+        "lead": translate_to_spanish(synthesis)[:700],
+        "question": translate_to_spanish(scope)[:1200],
         "methods": "",
-        "findings": translate_to_spanish(synthesis)[:1600],
-        "interpretation": translate_to_spanish(conclusion)[:1100],
+        "findings": translate_to_spanish(synthesis)[:1700],
+        "interpretation": translate_to_spanish(conclusion)[:1200],
         "limitations": translate_to_spanish(sections.get("limitations", ""))[:1000],
     }
 
@@ -438,6 +569,46 @@ def journal_brand(journal: str) -> tuple[str, str]:
         if k in x:
             return v
     return (journal or "JOURNAL", "")
+
+
+def build_meta_description(meta: dict, summary: dict) -> str:
+    description = (
+        summary.get("lead")
+        or summary.get("question")
+        or meta.get("abstract")
+        or meta.get("title")
+        or ""
+    )
+    description = re.sub(r"\s+", " ", description).strip()
+    return description[:155]
+
+
+def build_jsonld(meta: dict, summary: dict, slug: str) -> str:
+    authors = [{"@type": "Person", "name": a} for a in meta.get("authors", []) if a]
+    data = {
+        "@context": "https://schema.org",
+        "@type": "ScholarlyArticle",
+        "headline": meta.get("title", ""),
+        "url": f"https://nutreconciencia.com/articulos/{slug}/",
+        "mainEntityOfPage": f"https://nutreconciencia.com/articulos/{slug}/",
+        "author": authors,
+        "datePublished": str(meta.get("year", "")),
+        "publisher": {
+            "@type": "Organization",
+            "name": meta.get("journal", "") or ""
+        },
+        "description": build_meta_description(meta, summary),
+    }
+    doi = meta.get("doi", "")
+    pmid = meta.get("pmid", "")
+    same_as = []
+    if doi:
+        same_as.append(f"https://doi.org/{doi}")
+    if pmid:
+        same_as.append(f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/")
+    if same_as:
+        data["sameAs"] = same_as
+    return json.dumps(data, ensure_ascii=False)
 
 
 def render_page(meta: dict, summary: dict, slug: str) -> str:
@@ -475,6 +646,8 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
     )
     article_mode = summary.get("mode") or detect_article_type(meta)
     limitations = summary.get("limitations", "").strip()
+    meta_description = build_meta_description(meta, summary)
+    jsonld = build_jsonld(meta, summary, slug)
 
     authors_html = ", ".join(esc(a) for a in authors)
 
@@ -494,16 +667,13 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{esc(title)} | Miguel López Moreno</title>
-<meta name="description" content="{esc(lead[:155])}">
+<meta name="description" content="{esc(meta_description)}">
 <meta name="author" content="Miguel López Moreno">
 <link rel="canonical" href="https://nutreconciencia.com/articulos/{esc(slug)}/">
-<link rel="stylesheet" href="../../assets/styles.css?v=42">
+<link rel="stylesheet" href="../../assets/styles.css?v=43">
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(lead[:200])}">
-<meta property="og:type" content="article">
-
-<style>
-.clean-paper {{
+<meta property="og:type" content="article">\n<script type="application/ld+json">{jsonld}</script>\n\n<style>\n.clean-paper {{
   max-width: 980px;
   margin: 0 auto;
   padding: 70px 28px 96px;
