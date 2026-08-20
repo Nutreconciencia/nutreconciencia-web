@@ -442,6 +442,93 @@ def safe_unique_slug(title: str, root: Path) -> str:
         counter += 1
     return candidate
 
+
+def render_index_card(meta: dict, slug: str) -> str:
+    """Render one research card using the same visual classes as /articulos/index.html."""
+    title = html.escape(meta.get("title") or "")
+    title_key = normalize_title_key(meta.get("title") or "")
+    journal = meta.get("journal") or "JOURNAL"
+    year = str(meta.get("year") or "")
+    brand, publisher = journal_brand(journal)
+
+    return f"""<a class="paper-cover" data-year="{html.escape(year)}" data-title="{html.escape(title_key)}" href="{html.escape(slug)}/index.html">
+  <div class="paper-cover-head">
+    <div class="paper-cover-kicker">SCIENTIFIC PAPER</div>
+    <div class="paper-cover-journal">{html.escape(brand)}</div>
+    <div class="paper-cover-publisher">{html.escape(publisher)}</div>
+    <div class="paper-cover-issue">{html.escape(journal)} · {html.escape(year)}</div>
+  </div>
+  <div class="paper-cover-body">
+    <div class="paper-cover-title">{title}</div>
+    <div class="paper-cover-type">Open the scientific summary ↗</div>
+  </div>
+</a>"""
+
+
+def update_research_index() -> None:
+    """Update /articulos/index.html with missing canonical ORCID-managed cards."""
+    index_file = ART / "index.html"
+    if not index_file.exists():
+        print("Research index not found; skipping index synchronization.")
+        return
+
+    page = index_file.read_text(encoding="utf-8")
+    start_marker = '<div class="journal-grid" id="paperGrid">'
+    end_marker = '</div></div></section></main>'
+    start = page.find(start_marker)
+    if start == -1:
+        print("Research grid marker not found; skipping index synchronization.")
+        return
+    end = page.find(end_marker, start)
+    if end == -1:
+        print("Research grid closing marker not found; skipping index synchronization.")
+        return
+
+    grid_inner = page[start + len(start_marker):end]
+    existing_hrefs = set(re.findall(r'href="([^"]+/index\.html)"', grid_inner))
+
+    new_cards = []
+    for folder in sorted(ART.iterdir()):
+        if not folder.is_dir():
+            continue
+
+        meta = load_local_meta(folder)
+        if not meta:
+            continue
+
+        existing_page = folder / "index.html"
+        if existing_page.exists():
+            try:
+                existing_html = existing_page.read_text(encoding="utf-8", errors="ignore")
+                if 'name="robots" content="noindex,follow"' in existing_html:
+                    continue
+            except Exception:
+                pass
+
+        slug = folder.name
+        href = f"{slug}/index.html"
+        if href in existing_hrefs:
+            continue
+
+        new_cards.append(
+            (
+                str(meta.get("year") or ""),
+                (meta.get("title") or "").lower(),
+                render_index_card(meta, slug),
+            )
+        )
+
+    new_cards.sort(key=lambda x: (x[0], x[1]), reverse=True)
+
+    if not new_cards:
+        print("Research index already contains all canonical ORCID publications.")
+        return
+
+    new_html = "\n" + "\n".join(card for _, _, card in new_cards) + "\n"
+    updated_page = page[:start + len(start_marker)] + new_html + grid_inner + page[end:]
+    index_file.write_text(updated_page, encoding="utf-8")
+    print(f"Research index updated: added {len(new_cards)} publication cards.")
+
 def main():
     ART.mkdir(exist_ok=True)
     page = 0
@@ -536,6 +623,7 @@ def main():
         updated += 1
         print("Updated:", folder.name)
 
+    update_research_index()
     print(f"ORCID sync complete. Updated {updated} article pages. Duplicate-safe identity matching enabled.")
 
 
