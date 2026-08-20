@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ART = ROOT / "articulos"
 ORCID = "0000-0003-0553-6210"
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.6-luna")
+
 
 
 def get_json(url: str, headers: dict | None = None) -> dict:
@@ -165,105 +165,106 @@ def crossref_record(doi: str) -> dict:
     }
 
 
-def openai_summary(title: str, abstract: str, journal: str, year: str) -> dict:
-    key = os.getenv("OPENAI_API_KEY")
-    if not key:
-        print("OpenAI summary skipped: OPENAI_API_KEY is not available.")
-        return {}
-    if not abstract:
-        print("OpenAI summary skipped: abstract is empty.")
-        return {}
+def scientific_summary_from_abstract(title: str, abstract: str, journal: str, year: str) -> dict:
+    """
+    Build a Spanish scientific summary without any external AI/API.
 
-    prompt = f"""
-Eres editor científico de una web de investigación en nutrición.
-
-Resume este artículo EN CASTELLANO a partir EXCLUSIVAMENTE del título y abstract.
-No inventes datos. No generalices cuando el abstract permite dar cifras o detalles.
-Conserva n, población, intervención/comparador, duración, outcome principal y
-resultados numéricos cuando estén disponibles.
-
-Devuelve EXACTAMENTE estas 6 líneas y NADA MÁS.
-Una sola línea por campo. No uses viñetas, no uses JSON, no uses Markdown.
-
-LEAD: 1-2 frases sobre qué aporta exactamente el estudio.
-QUESTION: Empieza por "El objetivo fue..." e indica qué se comparó, en quién y el outcome principal.
-METHODS: Diseño, n, población, grupos/intervenciones y duración, solo si aparecen.
-FINDINGS: Resultados principales con cifras y diferencias entre grupos cuando existan.
-INTERPRETATION: Qué significan razonablemente los resultados sin sobreinterpretarlos.
-LIMITATIONS: Solo cautelas/limitaciones explícitas. Si el abstract no las menciona,
-escribe exactamente: "El abstract no detalla limitaciones específicas; para valorarlas es necesario consultar el artículo completo."
-
-TÍTULO: {title}
-REVISTA: {journal}
-AÑO: {year}
-
-ABSTRACT:
-{abstract}
-""".strip()
-
-    body = json.dumps({
-        "model": OPENAI_MODEL,
-        "input": prompt
-    })
-
-    req = urllib.request.Request(
-        "https://api.openai.com/v1/responses",
-        data=body.encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=120) as r:
-            data = json.loads(r.read().decode("utf-8"))
-    except Exception as exc:
-        print("OpenAI summary failed:", exc)
-        return {}
-
-    text = data.get("output_text", "")
+    It extracts labeled sections from the abstract (OBJECTIVES, METHODS, RESULTS,
+    CONCLUSION, LIMITATIONS and common variants). When a label is unavailable,
+    it uses conservative fallbacks and never invents study-specific facts.
+    """
+    text = clean_abstract(abstract)
     if not text:
-        chunks = []
-        for item in data.get("output", []):
-            for c in item.get("content", []) if isinstance(item, dict) else []:
-                if isinstance(c, dict) and c.get("type") == "output_text":
-                    chunks.append(c.get("text", ""))
-        text = "".join(chunks)
-
-    text = text.strip()
-    if not text:
-        print("OpenAI summary returned empty output.")
         return {}
 
-    result = {}
+    # Common structured-abstract labels and variants.
     labels = {
-        "LEAD": "lead",
-        "QUESTION": "question",
-        "METHODS": "methods",
-        "FINDINGS": "findings",
-        "INTERPRETATION": "interpretation",
-        "LIMITATIONS": "limitations",
+        "question": ["OBJECTIVES", "OBJECTIVE", "AIMS", "AIM", "PURPOSE", "BACKGROUND AND OBJECTIVES"],
+        "methods": ["METHODS", "METHOD", "DESIGN"],
+        "findings": ["RESULTS", "FINDINGS", "MAIN RESULTS"],
+        "interpretation": ["CONCLUSION", "CONCLUSIONS", "INTERPRETATION", "IMPLICATIONS"],
+        "limitations": ["LIMITATIONS", "STRENGTHS AND LIMITATIONS"],
     }
 
-    for line in text.splitlines():
-        line = line.strip()
-        for label, key_name in labels.items():
-            prefix = label + ":"
-            if line.upper().startswith(prefix):
-                result[key_name] = line[len(prefix):].strip()
+    # Find labeled sections with a regex that tolerates "LABEL:" or "LABEL -".
+    matches = []
+    upper = text.upper()
+    for field, variants in labels.items():
+        for label in variants:
+            pattern = re.compile(
+                rf'(?<!\w){re.escape(label)}\s*(?::|-)\s*',
+                flags=re.I
+            )
+            m = pattern.search(text)
+            if m:
+                matches.append((m.start(), m.end(), field))
                 break
 
-    required = ("lead", "question", "methods", "findings", "interpretation", "limitations")
-    missing = [k for k in required if not result.get(k)]
-    if missing:
-        # Do not silently turn a failed model response into generic content.
-        print("OpenAI summary parse incomplete; missing:", ", ".join(missing))
-        print("OpenAI raw output:", text[:4000])
-        return {}
+    matches.sort(key=lambda x: x[0])
 
-    return result
+    sections = {}
+    for i, (start_pos, end_pos, field) in enumerate(matches):
+        stop = matches[i + 1][0] if i + 1 < len(matches) else len(text)
+        sections[field] = text[end_pos:stop].strip(" ;.-")
+
+    # If the abstract is unstructured, keep a conservative lead from the first
+    # two sentences and use the whole text only as a source for manual review.
+    sentence_parts = re.split(r'(?<=[.!?])\s+', text)
+    first_sentences = " ".join(sentence_parts[:2]).strip()
+
+    question_raw = sections.get("question", "")
+    methods_raw = sections.get("methods", "")
+    findings_raw = sections.get("findings", "")
+    interpretation_raw = sections.get("interpretation", "")
+    limitations_raw = sections.get("limitations", "")
+
+    question = (
+        f"El objetivo fue {question_raw[0].lower() + question_raw[1:]}"
+        if question_raw else
+        "El abstract no presenta un apartado de objetivos explícito; la pregunta del estudio debe reconstruirse a partir del título y del contenido completo."
+    )
+
+    methods = (
+        methods_raw
+        if methods_raw else
+        "El abstract no presenta un apartado de métodos estructurado; para describir con precisión el diseño y la muestra es necesario consultar la publicación original."
+    )
+
+    findings = (
+        findings_raw
+        if findings_raw else
+        "El abstract no presenta un apartado de resultados estructurado; los resultados concretos deben consultarse en la publicación original."
+    )
+
+    interpretation = (
+        interpretation_raw
+        if interpretation_raw else
+        "El abstract no presenta una conclusión diferenciada; la interpretación debe limitarse a los resultados descritos y al diseño del estudio."
+    )
+
+    limitations = (
+        limitations_raw
+        if limitations_raw else
+        "El abstract no detalla limitaciones específicas; para valorarlas es necesario consultar el artículo completo."
+    )
+
+    # Lead: prefer a concrete objectives/results sentence; otherwise use a
+    # conservative statement that is still grounded in the abstract.
+    lead_source = question_raw or findings_raw or first_sentences
+    lead = (
+        lead_source[:450].strip()
+        if lead_source else
+        f"El artículo estudia {title}."
+    )
+
+    return {
+        "lead": lead,
+        "question": question[:900],
+        "methods": methods[:1200],
+        "findings": findings[:1400],
+        "interpretation": interpretation[:900],
+        "limitations": limitations[:900],
+    }
 
 def journal_brand(journal: str) -> tuple[str, str]:
     x = (journal or "").lower()
@@ -350,7 +351,7 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
 <meta name="description" content="{esc(lead[:155])}">
 <meta name="author" content="Miguel López Moreno">
 <link rel="canonical" href="https://nutreconciencia.com/articulos/{esc(slug)}/">
-<link rel="stylesheet" href="../../assets/styles.css?v=39">
+<link rel="stylesheet" href="../../assets/styles.css?v=40">
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(lead[:200])}">
 <meta property="og:type" content="article">
@@ -958,8 +959,9 @@ def main():
             f"Metadata for {folder.name}: PMID={meta['pmid'] or '-'}; "
             f"DOI={meta['doi'] or '-'}; abstract_chars={len(meta['abstract'])}"
         )
+        print("Scientific summary: generated locally from abstract; no OpenAI API required.")
 
-        summary = openai_summary(
+        summary = scientific_summary_from_abstract(
             meta["title"],
             meta["abstract"],
             meta["journal"],
