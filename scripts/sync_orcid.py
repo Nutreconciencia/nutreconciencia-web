@@ -1,5 +1,3 @@
-V30 — ORCID duplicate-safe generator
-
 1) Replace ONLY:
    scripts/sync_orcid.py
    with sync_orcid_V30.py
