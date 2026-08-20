@@ -268,7 +268,9 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
     abstract = meta.get("abstract", "")
     brand, publisher = journal_brand(journal)
 
-    def esc(x): return html.escape(x or "")
+    def esc(x):
+        return html.escape(x or "")
+
     mail_subject = urllib.parse.quote("Solicitud de estudio completo — " + title)
     mail_body = urllib.parse.quote(
         "Hola Miguel,\n\nMe gustaría solicitar el estudio completo: " + title + "\n\nMuchas gracias."
@@ -277,40 +279,227 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
     lead = summary.get("lead") or (
         "Esta ficha resume la publicación y sus principales elementos a partir de la información bibliográfica disponible."
     )
-    question = summary.get("question") or "La pregunta concreta del estudio se resume a partir de su abstract cuando está disponible."
-    methods = summary.get("methods") or "El diseño y la muestra se pueden consultar en la fuente original."
-    findings = summary.get("findings") or "Los principales resultados se recogen en el abstract y en la publicación original."
-    interpretation = summary.get("interpretation") or "La interpretación debe hacerse atendiendo al diseño, comparador y contexto del estudio."
-    limitations = summary.get("limitations") or "El abstract no especifica limitaciones; consulte el artículo completo para una valoración detallada."
+    question = summary.get("question") or (
+        "La pregunta concreta del estudio se resume a partir del abstract cuando está disponible."
+    )
+    methods = summary.get("methods") or (
+        "El diseño y la muestra se pueden consultar en la fuente original."
+    )
+    findings = summary.get("findings") or (
+        "Los principales resultados se recogen en el abstract y en la publicación original."
+    )
+    interpretation = summary.get("interpretation") or (
+        "La interpretación debe hacerse atendiendo al diseño, comparador y contexto del estudio."
+    )
+    limitations = summary.get("limitations") or (
+        "El abstract no especifica limitaciones; consulte el artículo completo para una valoración detallada."
+    )
 
     authors_html = ", ".join(esc(a) for a in authors)
+
     doi_link = (
-        f'<a class="meta-link" href="https://doi.org/{urllib.parse.quote(doi, safe="/")}" target="_blank" rel="noopener">DOI</a>'
+        f'<a class="clean-action" href="https://doi.org/{urllib.parse.quote(doi, safe="/")}" target="_blank" rel="noopener">Ver DOI ↗</a>'
         if doi else ""
     )
     pmid_link = (
-        f'<a class="meta-link" href="https://pubmed.ncbi.nlm.nih.gov/{esc(pmid)}/" target="_blank" rel="noopener">PubMed</a>'
+        f'<a class="clean-action clean-action-dark" href="https://pubmed.ncbi.nlm.nih.gov/{esc(pmid)}/" target="_blank" rel="noopener">Ver en PubMed ↗</a>'
         if pmid else ""
+    )
+
+    abstract_block = (
+        f'<section class="clean-section"><div class="clean-kicker">Abstract</div>'
+        f'<p>{esc(abstract)}</p></section>'
+        if abstract else ""
     )
 
     return f"""<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{esc(title)} | Miguel López Moreno</title>
 <meta name="description" content="{esc(lead[:155])}">
 <meta name="author" content="Miguel López Moreno">
-<link rel="canonical" href="https://nutreconciencia.com/articulos/{slug}/">
-<link rel="stylesheet" href="../../assets/styles.css?v=30">
+<link rel="canonical" href="https://nutreconciencia.com/articulos/{esc(slug)}/">
+<link rel="stylesheet" href="../../assets/styles.css?v=35">
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(lead[:200])}">
 <meta property="og:type" content="article">
+
+<style>
+.clean-paper {{
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 70px 28px 96px;
+}}
+.clean-header {{
+  max-width: 860px;
+  margin: 0 auto 58px;
+}}
+.clean-journal {{
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.65rem, 3.1vw, 2.65rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0 0 7px;
+}}
+.clean-publisher {{
+  font-size: .76rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  opacity: .65;
+  margin-bottom: 24px;
+}}
+.clean-meta {{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 16px;
+  font-size:.78rem;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  opacity:.68;
+  margin-bottom:18px;
+}}
+.clean-title {{
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 4.3vw, 3.8rem);
+  line-height: 1.06;
+  letter-spacing: -.025em;
+  margin: 0 0 20px;
+  font-weight: 500;
+}}
+.clean-authors {{
+  font-size: .98rem;
+  line-height: 1.65;
+  opacity: .72;
+  margin: 0;
+}}
+.clean-lead {{
+  max-width: 760px;
+  font-size: 1.18rem;
+  line-height: 1.65;
+  margin: 0 0 44px;
+}}
+.clean-divider {{
+  height:1px;
+  background:rgba(35,35,31,.14);
+  margin: 0 0 44px;
+}}
+.clean-section {{
+  max-width: 760px;
+  margin: 0 auto 42px;
+}}
+.clean-kicker {{
+  font-size:.72rem;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  font-weight:700;
+  color:#596542;
+  margin-bottom:12px;
+}}
+.clean-section h2 {{
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.7rem, 3vw, 2.25rem);
+  line-height:1.12;
+  font-weight:500;
+  margin:0 0 11px;
+}}
+.clean-section p {{
+  font-size:1.04rem;
+  line-height:1.72;
+  margin:0;
+  color:rgba(35,35,31,.82);
+}}
+.clean-summary {{
+  max-width:760px;
+  margin: 0 auto 50px;
+  padding: 28px 30px;
+  border:1px solid rgba(35,35,31,.12);
+  border-radius:18px;
+  background:rgba(255,255,255,.38);
+}}
+.clean-summary h2 {{
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem,3.2vw,2.4rem);
+  line-height:1.12;
+  font-weight:500;
+  margin:0 0 12px;
+}}
+.clean-summary p {{
+  font-size:1.03rem;
+  line-height:1.67;
+  margin:0;
+  color:rgba(35,35,31,.82);
+}}
+.clean-links {{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top: 22px;
+}}
+.clean-action {{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:44px;
+  padding:10px 17px;
+  border:1px solid rgba(35,35,31,.18);
+  border-radius:999px;
+  text-decoration:none;
+  color:inherit;
+  background:transparent;
+  font-weight:600;
+  font-size:.92rem;
+}}
+.clean-action-dark {{
+  background:#22221f;
+  color:#fff;
+  border-color:#22221f;
+}}
+.clean-request {{
+  max-width:760px;
+  margin: 48px auto 0;
+  padding: 24px 26px;
+  border-left: 2px solid #596542;
+  background:rgba(255,255,255,.3);
+}}
+.clean-request strong {{
+  display:block;
+  font-size:.8rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:#596542;
+  margin-bottom:9px;
+}}
+.clean-request a {{
+  font-weight:700;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}}
+.clean-request small {{
+  display:block;
+  margin-top:7px;
+  opacity:.62;
+}}
+@media (max-width: 700px) {{
+  .clean-paper {{ padding: 42px 18px 64px; }}
+  .clean-header {{ margin-bottom: 40px; }}
+  .clean-title {{ font-size: clamp(1.8rem, 10vw, 2.8rem); }}
+  .clean-lead {{ font-size:1.02rem; }}
+  .clean-summary {{ padding:22px 20px; border-radius:15px; }}
+  .clean-section {{ margin-bottom:34px; }}
+  .clean-section p {{ font-size:.98rem; }}
+  .clean-journal {{ font-size:2rem; }}
+}}
+</style>
 </head>
+
 <body>
 <nav class="nav"><div class="nav-inner">
 <a class="brand" href="../../index.html">Miguel López Moreno <span>/ Nutreconciencia</span></a>
-<button class="mobile-menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false"><span class="open">☰</span><span class="close">×</span></button>
+<button class="mobile-menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">
+<span class="open">☰</span><span class="close">×</span>
+</button>
 <div class="links">
 <a href="../../articulos/index.html">Investigación</a>
 <a href="../../prensa/index.html">Prensa</a>
@@ -320,59 +509,84 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
 </div></div></nav>
 
 <main>
-<section class="study-hero">
-<div class="inner">
-<div class="paper-cover" style="max-width:820px;margin:0 auto">
-<div class="paper-cover-head">
-<div class="paper-cover-kicker">SCIENTIFIC PAPER</div>
-<div class="paper-cover-journal">{esc(brand)}</div>
-<div class="paper-cover-publisher">{esc(publisher)}</div>
-<div class="paper-cover-issue">{esc(journal)} · {esc(year)}</div>
-</div>
-<div class="paper-cover-body">
-<div class="paper-cover-title">{esc(title)}</div>
-<div class="paper-cover-type">Scientific summary ↗</div>
-</div></div>
-</div>
+<section class="cream">
+  <div class="clean-paper">
+    <header class="clean-header">
+      <div class="clean-meta">
+        <span>Scientific paper</span>
+        <span>{esc(year)}</span>
+      </div>
+      <div class="clean-journal">{esc(brand)}</div>
+      <div class="clean-publisher">{esc(publisher)}</div>
+      <h1 class="clean-title">{esc(title)}</h1>
+      {f'<p class="clean-authors">{authors_html}</p>' if authors_html else ''}
+    </header>
+
+    <div class="clean-summary">
+      <div class="clean-kicker">Resumen científico</div>
+      <h2>Lo esencial en menos de un minuto.</h2>
+      <p>{esc(lead)}</p>
+    </div>
+
+    <div class="clean-divider"></div>
+
+    <section class="clean-section">
+      <div class="clean-kicker">La pregunta</div>
+      <h2>¿Qué quiso estudiar?</h2>
+      <p>{esc(question)}</p>
+    </section>
+
+    <section class="clean-section">
+      <div class="clean-kicker">Qué hicieron</div>
+      <h2>Diseño del estudio</h2>
+      <p>{esc(methods)}</p>
+    </section>
+
+    <section class="clean-section">
+      <div class="clean-kicker">Qué encontraron</div>
+      <h2>Principales resultados</h2>
+      <p>{esc(findings)}</p>
+    </section>
+
+    <section class="clean-section">
+      <div class="clean-kicker">Interpretación</div>
+      <h2>Cómo interpretarlo</h2>
+      <p>{esc(interpretation)}</p>
+    </section>
+
+    <section class="clean-section">
+      <div class="clean-kicker">Contexto</div>
+      <h2>Limitaciones y contexto</h2>
+      <p>{esc(limitations)}</p>
+      {abstract_block}
+    </section>
+
+    <section class="clean-section">
+      <div class="clean-kicker">Publicación original</div>
+      <h2>{esc(journal)} · {esc(year)}</h2>
+      <div class="clean-links">{doi_link}{pmid_link}</div>
+    </section>
+
+    <div class="clean-request">
+      <strong>¿Quieres consultar el estudio completo?</strong>
+      <a href="mailto:miguel@nutreconciencia.com?subject={mail_subject}&body={mail_body}">Solicitar el estudio completo por email</a>
+      <small>Se abrirá un correo dirigido a miguel@nutreconciencia.com.</small>
+    </div>
+  </div>
 </section>
-
-<section class="cream"><div class="inner">
-<div class="science-glance">
-<div class="summary-panel">
-<div class="summary-kicker">Resumen científico</div>
-<h2>Lo esencial en menos de un minuto.</h2>
-<p>{esc(lead)}</p>
-</div>
-<div class="insight-grid">
-<div class="insight-card"><div class="num">01</div><h3>La pregunta</h3><p>{esc(question)}</p></div>
-<div class="insight-card"><div class="num">02</div><h3>Qué hicieron</h3><p>{esc(methods)}</p></div>
-<div class="insight-card"><div class="num">03</div><h3>Qué encontraron</h3><p>{esc(findings)}</p></div>
-</div>
-</div>
-
-<div class="study-layout" style="max-width:880px;margin:0 auto">
-<article class="study-main article-prose">
-<h2>Cómo interpretarlo</h2><p>{esc(interpretation)}</p>
-<h2>Limitaciones y contexto</h2><p>{esc(limitations)}</p>
-<div class="paper-metadata-row">
-<span>{esc(year)}</span><span>{esc(journal)}</span>{doi_link}{pmid_link}
-</div>
-{"<p class='study-authors'><strong>Autores:</strong> "+authors_html+"</p>" if authors_html else ""}
-{"<div class='study-abstract'><h2>Abstract</h2><p>"+esc(abstract)+"</p></div>" if abstract and not summary else ""}
-<div class="study-request">
-<strong>¿Quieres consultar el estudio completo?</strong>
-<a href="mailto:miguel@nutreconciencia.com?subject={mail_subject}&body={mail_body}">Solicitar el estudio completo por email</a>
-<small>Se abrirá un correo dirigido a miguel@nutreconciencia.com.</small>
-</div>
-</article>
-</div>
-</div></section>
 </main>
-<script>
-document.querySelectorAll('.mobile-menu-toggle').forEach(btn=>{{btn.addEventListener('click',()=>{{const nav=btn.closest('.nav');const open=nav.classList.toggle('nav-open');btn.setAttribute('aria-expanded',open?'true':'false');}});}});
-</script>
-</body></html>"""
 
+<script>
+document.querySelectorAll('.mobile-menu-toggle').forEach(btn => {{
+  btn.addEventListener('click', () => {{
+    const nav = btn.closest('.nav');
+    const open = nav.classList.toggle('nav-open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }});
+}});
+</script>
+</body>
+</html>"""
 
 def normalize_title_key(value: str) -> str:
     """Normalize title text for duplicate matching."""
@@ -467,11 +681,11 @@ def render_index_card(meta: dict, slug: str) -> str:
 
 def update_research_index() -> None:
     """
-    Synchronize /articulos/index.html with canonical ORCID-managed publications.
+    Keep /articulos/index.html synchronized with canonical ORCID publications.
 
-    We deliberately use an exact href check against the whole document rather
-    than building a global href set. This avoids false positives and makes the
-    behavior deterministic.
+    Existing paper-cover cards are deduplicated by exact href and normalized
+    title. Redirect/noindex folders are ignored. Missing canonical ORCID cards
+    are appended once.
     """
     index_file = ART / "index.html"
     if not index_file.exists():
@@ -492,7 +706,35 @@ def update_research_index() -> None:
         print("Research grid closing marker not found; skipping index synchronization.")
         return
 
-    new_cards = []
+    grid_start = start + len(grid_marker)
+    grid_inner = page[grid_start:end]
+
+    card_pattern = re.compile(r'<a class="paper-cover"(?P<attrs>.*?)</a>', re.S)
+    cards = card_pattern.findall(grid_inner)
+
+    unique_cards = []
+    seen_hrefs = set()
+    seen_titles = set()
+    removed = 0
+
+    for attrs in cards:
+        href_match = re.search(r'href="([^"]+)"', attrs)
+        title_match = re.search(r'data-title="([^"]*)"', attrs)
+        href = href_match.group(1) if href_match else ""
+        title_key = normalize_title_key(title_match.group(1) if title_match else "")
+
+        if (href and href in seen_hrefs) or (title_key and title_key in seen_titles):
+            removed += 1
+            continue
+
+        if href:
+            seen_hrefs.add(href)
+        if title_key:
+            seen_titles.add(title_key)
+
+        unique_cards.append(f'<a class="paper-cover"{attrs}</a>')
+
+    candidates = []
     for folder in sorted(ART.iterdir()):
         if not folder.is_dir():
             continue
@@ -506,44 +748,50 @@ def update_research_index() -> None:
             continue
 
         try:
-            html_page = page_file.read_text(encoding="utf-8", errors="ignore")
+            page_html = page_file.read_text(encoding="utf-8", errors="ignore")
         except Exception:
-            html_page = ""
+            page_html = ""
 
-        # Skip redirect/noindex duplicate folders created by dedupe_orcid.py.
-        if 'name="robots" content="noindex,follow"' in html_page:
+        if 'name="robots" content="noindex,follow"' in page_html:
             continue
 
         slug = folder.name
-        exact_href = f'href="{slug}/index.html"'
+        href = f"{slug}/index.html"
+        title_key = normalize_title_key(meta.get("title") or "")
 
-        # Check the actual published research index, not a derived href set.
-        if exact_href in page:
+        if href in seen_hrefs or (title_key and title_key in seen_titles):
             continue
 
-        new_cards.append(
-            (
-                str(meta.get("year") or ""),
-                (meta.get("title") or "").lower(),
-                render_index_card(meta, slug),
-            )
-        )
+        candidates.append((
+            str(meta.get("year") or ""),
+            (meta.get("title") or "").lower(),
+            render_index_card(meta, slug),
+            href,
+            title_key,
+        ))
 
-    new_cards.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
 
-    if not new_cards:
-        print("Research index already contains all canonical ORCID publications.")
-        return
+    added = 0
+    for _, _, card, href, title_key in candidates:
+        if href in seen_hrefs or (title_key and title_key in seen_titles):
+            continue
+        unique_cards.append(card)
+        seen_hrefs.add(href)
+        if title_key:
+            seen_titles.add(title_key)
+        added += 1
 
-    insertion = "\n" + "\n".join(card for _, _, card in new_cards) + "\n"
-    updated_page = (
-        page[:start + len(grid_marker)]
-        + insertion
-        + page[start + len(grid_marker):]
+    new_grid = "\n" + "\n".join(unique_cards) + "\n"
+    updated_page = page[:grid_start] + new_grid + page[end:]
+
+    if updated_page != page:
+        index_file.write_text(updated_page, encoding="utf-8")
+
+    print(
+        f"Research index synchronized: removed {removed} duplicate cards; "
+        f"added {added} missing publication cards; total cards kept {len(unique_cards)}."
     )
-
-    index_file.write_text(updated_page, encoding="utf-8")
-    print(f"Research index updated: added {len(new_cards)} publication cards.")
 
 def main():
     ART.mkdir(exist_ok=True)
