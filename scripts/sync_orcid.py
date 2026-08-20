@@ -531,9 +531,10 @@ def main():
         summary = openai_summary(meta["title"], meta["abstract"], meta["journal"], meta["year"])
 
         orcid_file.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-        (folder / "index.html").write_text(render_page(meta, summary, slug), encoding="utf-8")
+        page_slug = folder.name
+        (folder / "index.html").write_text(render_page(meta, summary, page_slug), encoding="utf-8")
         updated += 1
-        print("Updated:", slug)
+        print("Updated:", folder.name)
 
     print(f"ORCID sync complete. Updated {updated} article pages. Duplicate-safe identity matching enabled.")
 
