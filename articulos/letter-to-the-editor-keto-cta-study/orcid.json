@@ -1,8 +1,11 @@
 {
-  "title": "Letter to the Editor: KETO CTA Study",
+  "title": "TheKETOCTAStudy.",
   "year": "2025",
-  "journal": "JACC: Advances",
-  "authors": [],
+  "journal": "JACC. Advances",
+  "authors": [
+    "Miguel López-Moreno",
+    "José Francisco López-Gil"
+  ],
   "doi": "10.1016/j.jacadv.2025.101861",
   "pmid": "40450911",
   "abstract": "",
