@@ -1,5 +1,5 @@
 {
-  "title": "Feasibilityandpotentialeffectofapilotblendeddigitalbehaviorchangeinterventionpromotingsustainabledietsoverayear.",
+  "title": "Feasibility and potential effect of a pilot blended digital behavior change intervention promoting sustainable diets over a year.",
   "year": "2025",
   "journal": "Scientific reports",
   "authors": [
@@ -16,6 +16,10 @@
   "doi": "10.1038/s41598-025-85307-5",
   "pmid": "39814876",
   "abstract": "Well-designed effective interventions promoting sustainable diets are urgently needed to benefit both human and planetary health. This study evaluated the feasibility, acceptability, and potential impact of a pilot blended digital intervention aimed at promoting sustainable diets. We conducted a series of ABA n-of-1 trials with baseline, intervention, and follow-up phases over the course of a year, involving twelve participants. The intervention included text messages, and individualized online feedback sessions. Quantitative data on diet composition was collected daily for 15 weeks distributed over the year. Qualitative data was collected through interviews at the end of each phase. Results showed high feasibility and acceptability: 100% retention rate, 75% attendance at all feedback sessions, and an average response rate of 86% to the dietary questionnaires. The intervention had a positive and significant effect on the overall diet composition. Specifically, 92% of the participants significantly increased their daily fruit and vegetable consumption, and 58% significantly reduced their intake of red and processed meat as well as ultra-processed foods. Participants also reported reducing food waste, choosing minimally packaged and in-season foods, and prioritizing fair-sourced food. The study demonstrates the potential of digital interventions to effectively promote sustainable dietary behaviors and offers insights for future large-scale implementations. Upcoming iterations should involve a more diverse population, particularly less motivated individuals and with more diverse socioeconomic status.International Registered Report Identifier (IRRID): PRR1-10.2196/41443.",
+  "publication_types": [
+    "Journal Article",
+    "Research Support, Non-U.S. Gov't"
+  ],
   "orcid": "0000-0003-0553-6210",
   "orcid_work_id": "181272261"
 }
