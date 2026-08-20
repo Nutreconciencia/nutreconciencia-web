@@ -1,11 +1,14 @@
 {
   "title": "Is this food healthy? Reframing nutrition evidence through counterfactual comparisons",
   "year": "2026",
-  "journal": "Clinical Nutrition",
-  "authors": [],
+  "journal": "Clinical nutrition (Edinburgh, Scotland)",
+  "authors": [
+    "Miguel López-Moreno",
+    "José Francisco López-Gil"
+  ],
   "doi": "10.1016/j.clnu.2026.106655",
   "pmid": "41980292",
-  "abstract": "",
+  "abstract": "Nutrition science frequently produces conclusions that appear inconsistent or context dependent, contributing to uncertainty in dietary recommendations. Many debates framed around questions such as whether a specific food is \"healthy\" implicitly assume that foods exert intrinsic effects independent of dietary context. However, because diet is inherently compositional, increasing intake of one food necessarily implies decreasing another, meaning that dietary effects represent substitution contrasts rather than isolated exposures. This article aims to critically evaluate how inadequate specification of counterfactual contrasts and comparators in nutrition research limits causal interpretation in evidence synthesis, and to outline methodological approaches based on causal inference and network meta-analysis (NMA) to improve interpretability. Drawing on the potential outcomes framework, we propose that meaningful causal interpretation requires explicitly defining the comparator (\"incomparison with that?\") and ensuring that exposures correspond to well-defined interventions consistent with the consistency assumption. In this context, NMA offers a methodological framework that preserves comparator structure by jointly modeling multiple competing alternatives, thereby aligning more closely with the relational nature of dietary interventions and causal inference logic. Practical recommendations are provided to improve future research, including explicit specification of counterfactual contrasts, clearer definition of dietary exposures, transparent reporting of substitution context and energy balance, and appropriate use of NMA when multiple alternatives exist. We conclude that improving nutrition evidence synthesis does not require abandoning meta-analysis but rather reframing research questions and analytical strategies around clearly defined causal contrasts.",
   "orcid": "0000-0003-0553-6210",
   "orcid_work_id": "210603136"
 }
