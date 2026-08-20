@@ -167,7 +167,11 @@ def crossref_record(doi: str) -> dict:
 
 def openai_summary(title: str, abstract: str, journal: str, year: str) -> dict:
     key = os.getenv("OPENAI_API_KEY")
-    if not key or not abstract:
+    if not key:
+        print("OpenAI summary skipped: OPENAI_API_KEY is not available.")
+        return {}
+    if not abstract:
+        print("OpenAI summary skipped: abstract is empty.")
         return {}
 
     prompt = f"""
@@ -256,7 +260,7 @@ ABSTRACT:
     if missing:
         # Do not silently turn a failed model response into generic content.
         print("OpenAI summary parse incomplete; missing:", ", ".join(missing))
-        print("OpenAI raw output:", text[:2000])
+        print("OpenAI raw output:", text[:4000])
         return {}
 
     return result
@@ -346,7 +350,7 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
 <meta name="description" content="{esc(lead[:155])}">
 <meta name="author" content="Miguel López Moreno">
 <link rel="canonical" href="https://nutreconciencia.com/articulos/{esc(slug)}/">
-<link rel="stylesheet" href="../../assets/styles.css?v=38">
+<link rel="stylesheet" href="../../assets/styles.css?v=39">
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(lead[:200])}">
 <meta property="og:type" content="article">
@@ -916,23 +920,51 @@ def main():
         if existing_page.exists() and not orcid_file.exists():
             continue
 
-        pmid = pubmed_search(doi, title)
+        existing_meta = load_local_meta(folder)
+
+        # Query PubMed and Crossref independently. Crossref is useful as a
+        # fallback even when PubMed returned a partial record.
+        pmid = pubmed_search(doi, title) or str(existing_meta.get("pmid") or "")
         pm = pubmed_record(pmid)
-        cr = crossref_record(doi) if not pm else {}
+        cr = crossref_record(doi) if doi else {}
+
+        abstract = (
+            pm.get("abstract")
+            or cr.get("abstract")
+            or existing_meta.get("abstract")
+            or ""
+        )
+
+        authors = (
+            pm.get("authors")
+            or cr.get("authors")
+            or existing_meta.get("authors")
+            or []
+        )
 
         meta = {
-            "title": title,
-            "year": pm.get("year") or year,
-            "journal": pm.get("journal") or journal,
-            "authors": pm.get("authors") or [],
-            "doi": pm.get("doi") or doi or cr.get("doi",""),
+            "title": pm.get("title") or title or existing_meta.get("title") or "",
+            "year": pm.get("year") or cr.get("year") or year or existing_meta.get("year") or "",
+            "journal": pm.get("journal") or cr.get("journal") or journal or existing_meta.get("journal") or "",
+            "authors": authors,
+            "doi": pm.get("doi") or cr.get("doi") or doi or existing_meta.get("doi") or "",
             "pmid": pmid,
-            "abstract": pm.get("abstract") or cr.get("abstract") or "",
+            "abstract": clean_abstract(abstract),
             "orcid": ORCID,
-            "orcid_work_id": orcid_work_id,
+            "orcid_work_id": orcid_work_id or existing_meta.get("orcid_work_id") or "",
         }
 
-        summary = openai_summary(meta["title"], meta["abstract"], meta["journal"], meta["year"])
+        print(
+            f"Metadata for {folder.name}: PMID={meta['pmid'] or '-'}; "
+            f"DOI={meta['doi'] or '-'}; abstract_chars={len(meta['abstract'])}"
+        )
+
+        summary = openai_summary(
+            meta["title"],
+            meta["abstract"],
+            meta["journal"],
+            meta["year"],
+        )
 
         orcid_file.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
         page_slug = folder.name
