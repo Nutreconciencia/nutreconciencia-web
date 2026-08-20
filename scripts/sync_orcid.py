@@ -169,28 +169,74 @@ def openai_summary(title: str, abstract: str, journal: str, year: str) -> dict:
     key = os.getenv("OPENAI_API_KEY")
     if not key or not abstract:
         return {}
-    prompt = f"""
-Eres editor científico de una web personal de investigación en nutrición.
-Resume este artículo en CASTELLANO, con precisión y sin inventar resultados.
-No uses información que no esté en el abstract. Mantén el título original en su idioma.
 
+    prompt = f"""
+Eres editor científico de una web de investigación en nutrición.
+Tu tarea NO es escribir un resumen genérico. Debes extraer del abstract datos
+concretos del estudio y convertirlos en una ficha breve, específica y fiel.
+
+REGLAS OBLIGATORIAS
+1. Usa únicamente la información contenida en el título y abstract proporcionados.
+2. No inventes ningún dato, población, resultado, limitación o interpretación.
+3. No uses frases vacías como "se evaluó el impacto", "podría ser relevante" o
+   "el estudio aporta información" si puedes decir exactamente qué se estudió.
+4. Conserva cifras, tamaños muestrales, duración, comparadores, outcomes y
+   diferencias estadísticas cuando estén disponibles.
+5. Si el abstract no aporta un dato, dilo claramente; no lo rellenes con
+   conocimiento externo.
+6. La respuesta debe sonar como una ficha de divulgación científica rigurosa,
+   no como un abstract traducido palabra por palabra.
+7. Escribe en CASTELLANO, pero mantén el título original del artículo.
+
+FORMATO
 Devuelve SOLO JSON válido con estas claves:
 lead, question, methods, findings, interpretation, limitations
 
-- lead: 1-2 frases que expliquen por qué importa.
-- question: la pregunta principal.
-- methods: 1-2 frases sobre diseño/muestra/intervención.
-- findings: resultados principales.
-- interpretation: qué significa razonablemente.
-- limitations: limitaciones o cautelas explícitas en el abstract; si no aparecen, indica que el abstract no las especifica.
+question:
+- Empieza con "El objetivo fue..." o "El estudio evaluó..."
+- Debe identificar exactamente qué se comparó, en quién y qué outcome principal
+  se estudió, cuando esos datos estén en el abstract.
+- Máximo 2 frases.
+
+methods:
+- Indica el diseño, n, población, grupos/intervenciones y duración cuando aparezcan.
+- Incluye si fue aleatorizado, controlado, paralelo/crossover, isocalórico, etc.
+- Máximo 3 frases.
+
+findings:
+- Resume los resultados concretos, priorizando los outcomes principales.
+- Incluye cifras y diferencias entre grupos cuando estén disponibles.
+- Máximo 3 frases.
+
+interpretation:
+- Explica qué significan los resultados SIN ir más allá del abstract.
+- Distingue resultado observado de causalidad o de implicación clínica.
+- Máximo 2 frases.
+
+limitations:
+- NO copies el abstract.
+- Extrae únicamente limitaciones/cautelas que estén explícitas en el abstract.
+- Si el abstract no menciona limitaciones, escribe exactamente:
+  "El abstract no detalla limitaciones específicas; para valorarlas es necesario consultar el artículo completo."
+- Máximo 2 frases.
+
+lead:
+- 1-2 frases que expliquen de forma concreta qué aporta el estudio, evitando
+  generalidades.
 
 Título: {title}
 Revista: {journal}
 Año: {year}
-Abstract:
+
+ABSTRACT:
 {abstract}
 """.strip()
-    body = json.dumps({"model": OPENAI_MODEL, "input": prompt, "temperature": 0.2})
+
+    body = json.dumps({
+        "model": OPENAI_MODEL,
+        "input": prompt
+    })
+
     req = urllib.request.Request(
         "https://api.openai.com/v1/responses",
         data=body.encode("utf-8"),
@@ -200,16 +246,14 @@ Abstract:
         },
         method="POST",
     )
+
     try:
-        raw = get_json("https://api.openai.com/v1/responses", {
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-        }) if False else None
         with urllib.request.urlopen(req, timeout=120) as r:
             data = json.loads(r.read().decode("utf-8"))
     except Exception as exc:
         print("OpenAI summary failed:", exc)
         return {}
+
     text = data.get("output_text", "")
     if not text:
         chunks = []
@@ -218,18 +262,25 @@ Abstract:
                 if isinstance(c, dict) and c.get("type") == "output_text":
                     chunks.append(c.get("text", ""))
         text = "".join(chunks)
+
     text = text.strip()
     try:
-        return json.loads(text)
+        result = json.loads(text)
+        if isinstance(result, dict):
+            return result
     except Exception:
-        m = re.search(r"\{.*\}", text, flags=re.S)
-        if m:
-            try:
-                return json.loads(m.group(0))
-            except Exception:
-                pass
-    return {}
+        pass
 
+    m = re.search(r"\{.*\}", text, flags=re.S)
+    if m:
+        try:
+            result = json.loads(m.group(0))
+            if isinstance(result, dict):
+                return result
+        except Exception:
+            pass
+
+    return {}
 
 def journal_brand(journal: str) -> tuple[str, str]:
     x = (journal or "").lower()
@@ -280,16 +331,16 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
         "Esta ficha resume la publicación y sus principales elementos a partir de la información bibliográfica disponible."
     )
     question = summary.get("question") or (
-        "La pregunta concreta del estudio se resume a partir del abstract cuando está disponible."
+        "El objetivo del estudio no pudo reconstruirse con suficiente detalle a partir de los datos disponibles."
     )
     methods = summary.get("methods") or (
-        "El diseño y la muestra se pueden consultar en la fuente original."
+        "El abstract disponible no aporta suficiente información para describir con precisión el diseño y la muestra."
     )
     findings = summary.get("findings") or (
-        "Los principales resultados se recogen en el abstract y en la publicación original."
+        "El abstract disponible no aporta suficiente información para resumir los resultados con precisión."
     )
     interpretation = summary.get("interpretation") or (
-        "La interpretación debe hacerse atendiendo al diseño, comparador y contexto del estudio."
+        "La interpretación debe limitarse a lo que permiten sostener el diseño y los resultados descritos en el abstract."
     )
     limitations = summary.get("limitations") or (
         "El abstract no especifica limitaciones; consulte el artículo completo para una valoración detallada."
@@ -306,11 +357,6 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
         if pmid else ""
     )
 
-    abstract_block = (
-        f'<div class="clean-section"><div class="clean-kicker">Abstract</div>'
-        f'<p>{esc(abstract)}</p></div>'
-        if abstract else ""
-    )
 
     return f"""<!doctype html>
 <html lang="es">
@@ -321,7 +367,7 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
 <meta name="description" content="{esc(lead[:155])}">
 <meta name="author" content="Miguel López Moreno">
 <link rel="canonical" href="https://nutreconciencia.com/articulos/{esc(slug)}/">
-<link rel="stylesheet" href="../../assets/styles.css?v=36">
+<link rel="stylesheet" href="../../assets/styles.css?v=37">
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(lead[:200])}">
 <meta property="og:type" content="article">
@@ -576,7 +622,6 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
       <div class="clean-kicker">Contexto</div>
       <h2>Limitaciones y contexto</h2>
       <p>{esc(limitations)}</p>
-      {abstract_block}
     </div>
 
     <div class="clean-section">
