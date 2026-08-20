@@ -307,8 +307,8 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
     )
 
     abstract_block = (
-        f'<section class="clean-section"><div class="clean-kicker">Abstract</div>'
-        f'<p>{esc(abstract)}</p></section>'
+        f'<div class="clean-section"><div class="clean-kicker">Abstract</div>'
+        f'<p>{esc(abstract)}</p></div>'
         if abstract else ""
     )
 
@@ -321,7 +321,7 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
 <meta name="description" content="{esc(lead[:155])}">
 <meta name="author" content="Miguel López Moreno">
 <link rel="canonical" href="https://nutreconciencia.com/articulos/{esc(slug)}/">
-<link rel="stylesheet" href="../../assets/styles.css?v=35">
+<link rel="stylesheet" href="../../assets/styles.css?v=36">
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(lead[:200])}">
 <meta property="og:type" content="article">
@@ -331,6 +331,14 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
   max-width: 980px;
   margin: 0 auto;
   padding: 70px 28px 96px;
+}}
+.clean-paper section,
+.clean-paper article,
+.clean-paper div.clean-section,
+.clean-paper .clean-summary,
+.clean-paper .clean-request {{
+  min-height: 0 !important;
+  height: auto !important;
 }}
 .clean-header {{
   max-width: 860px;
@@ -387,7 +395,17 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
 }}
 .clean-section {{
   max-width: 760px;
-  margin: 0 auto 42px;
+  margin: 0 auto 38px !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  display: block !important;
+  align-items: initial !important;
+  justify-content: initial !important;
+  place-items: initial !important;
+}}
+.clean-section:last-child {{
+  margin-bottom: 0 !important;
 }}
 .clean-kicker {{
   font-size:.72rem;
@@ -530,42 +548,42 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
 
     <div class="clean-divider"></div>
 
-    <section class="clean-section">
+    <div class="clean-section">
       <div class="clean-kicker">La pregunta</div>
       <h2>¿Qué quiso estudiar?</h2>
       <p>{esc(question)}</p>
-    </section>
+    </div>
 
-    <section class="clean-section">
+    <div class="clean-section">
       <div class="clean-kicker">Qué hicieron</div>
       <h2>Diseño del estudio</h2>
       <p>{esc(methods)}</p>
-    </section>
+    </div>
 
-    <section class="clean-section">
+    <div class="clean-section">
       <div class="clean-kicker">Qué encontraron</div>
       <h2>Principales resultados</h2>
       <p>{esc(findings)}</p>
-    </section>
+    </div>
 
-    <section class="clean-section">
+    <div class="clean-section">
       <div class="clean-kicker">Interpretación</div>
       <h2>Cómo interpretarlo</h2>
       <p>{esc(interpretation)}</p>
-    </section>
+    </div>
 
-    <section class="clean-section">
+    <div class="clean-section">
       <div class="clean-kicker">Contexto</div>
       <h2>Limitaciones y contexto</h2>
       <p>{esc(limitations)}</p>
       {abstract_block}
-    </section>
+    </div>
 
-    <section class="clean-section">
+    <div class="clean-section">
       <div class="clean-kicker">Publicación original</div>
       <h2>{esc(journal)} · {esc(year)}</h2>
       <div class="clean-links">{doi_link}{pmid_link}</div>
-    </section>
+    </div>
 
     <div class="clean-request">
       <strong>¿Quieres consultar el estudio completo?</strong>
@@ -573,7 +591,7 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
       <small>Se abrirá un correo dirigido a miguel@nutreconciencia.com.</small>
     </div>
   </div>
-</section>
+</div>
 </main>
 
 <script>
@@ -694,7 +712,7 @@ def update_research_index() -> None:
 
     page = index_file.read_text(encoding="utf-8")
     grid_marker = '<div class="journal-grid" id="paperGrid">'
-    close_marker = '</div></div></section></main>'
+    close_marker = '</div></div></div></main>'
 
     start = page.find(grid_marker)
     if start == -1:
