@@ -98,7 +98,8 @@ def pubmed_record(pmid: str) -> dict:
     art = root.find(".//PubmedArticle")
     if art is None:
         return {}
-    title = "".join(art.findtext(".//ArticleTitle", default="").split())
+    title_node = art.find(".//ArticleTitle")
+    title = "".join(title_node.itertext()).strip() if title_node is not None else ""
     journal = art.findtext(".//Journal/Title", default="")
     year = (
         art.findtext(".//PubDate/Year")
@@ -133,6 +134,11 @@ def pubmed_record(pmid: str) -> dict:
         "authors": authors,
         "abstract": clean_abstract(abstract),
         "doi": doi,
+        "publication_types": [
+            (node.text or "").strip()
+            for node in art.findall(".//PublicationTypeList/PublicationType")
+            if (node.text or "").strip()
+        ],
     }
 
 
@@ -165,19 +171,125 @@ def crossref_record(doi: str) -> dict:
     }
 
 
-def scientific_summary_from_abstract(title: str, abstract: str, journal: str, year: str) -> dict:
-    """
-    Build a Spanish scientific summary without any external AI/API.
 
-    It extracts labeled sections from the abstract (OBJECTIVES, METHODS, RESULTS,
-    CONCLUSION, LIMITATIONS and common variants). When a label is unavailable,
-    it uses conservative fallbacks and never invents study-specific facts.
-    """
-    text = clean_abstract(abstract)
+def translate_to_spanish(text: str) -> str:
+    """Translate short scientific text to Spanish without requiring an API key."""
+    text = (text or "").strip()
     if not text:
-        return {}
+        return ""
 
-    # Common structured-abstract labels and variants.
+    # Avoid translating text that already looks Spanish.
+    spanish_markers = [
+        " el ", " la ", " los ", " las ", " una ", " un ",
+        " fue ", " fueron ", " durante ", " estudio ", " resultados "
+    ]
+    lower = f" {text.lower()} "
+    if sum(marker in lower for marker in spanish_markers) >= 2:
+        return text
+
+    chunks = []
+    remaining = text
+
+    # Public Google Translate endpoint (no key). Keep chunks small and preserve
+    # paragraph boundaries. This is used only for generated summary snippets,
+    # not for the article's original title or abstract.
+    while remaining:
+        chunk = remaining[:1800]
+        if len(remaining) > 1800:
+            split_at = max(chunk.rfind(". "), chunk.rfind("; "), chunk.rfind(" "))
+            if split_at > 500:
+                chunk = remaining[:split_at + 1]
+        try:
+            url = "https://translate.googleapis.com/translate_a/single?" + urllib.parse.urlencode({
+                "client": "gtx",
+                "sl": "en",
+                "tl": "es",
+                "dt": "t",
+                "q": chunk,
+            })
+            data = json.loads(get_text(url))
+            translated = "".join(
+                item[0] for item in data[0]
+                if isinstance(item, list) and item and item[0]
+            )
+            chunks.append(translated or chunk)
+        except Exception as exc:
+            print("Translation fallback:", exc)
+            chunks.append(chunk)
+        remaining = remaining[len(chunk):]
+
+    return " ".join(chunks).strip()
+
+
+
+def detect_article_type(meta: dict) -> str:
+    types = [str(x).lower() for x in meta.get("publication_types", [])]
+    title = str(meta.get("title") or "").lower()
+
+    if any("randomized controlled trial" in x or "clinical trial" in x for x in types):
+        return "research"
+    if any("meta-analysis" in x or "systematic review" in x or x == "review" for x in types):
+        return "review"
+    if any("editorial" in x or "comment" in x or "letter" in x or "perspective" in x for x in types):
+        return "commentary"
+    if any("review" in title for _ in [0]):
+        return "review"
+    return "research"
+
+
+def translate_to_spanish(text: str) -> str:
+    text = (text or "").strip()
+    if not text:
+        return ""
+
+    # Avoid translating text that already looks Spanish.
+    lower = f" {text.lower()} "
+    spanish_markers = [
+        " el ", " la ", " los ", " las ", " una ", " un ",
+        " fue ", " fueron ", " durante ", " estudio ", " resultados ",
+        " objetivo ", " evaluó ", " comparó "
+    ]
+    if sum(marker in lower for marker in spanish_markers) >= 2:
+        return text
+
+    chunks = []
+    remaining = text
+    while remaining:
+        chunk = remaining[:1800]
+        if len(remaining) > 1800:
+            split_at = max(
+                chunk.rfind(". "),
+                chunk.rfind("; "),
+                chunk.rfind(" ")
+            )
+            if split_at > 500:
+                chunk = remaining[:split_at + 1]
+
+        try:
+            url = "https://translate.googleapis.com/translate_a/single?" + urllib.parse.urlencode({
+                "client": "gtx",
+                "sl": "en",
+                "tl": "es",
+                "dt": "t",
+                "q": chunk,
+            })
+            data = json.loads(get_text(url))
+            translated = "".join(
+                item[0]
+                for item in data[0]
+                if isinstance(item, list) and item and item[0]
+            )
+            chunks.append(translated or chunk)
+        except Exception as exc:
+            print("Translation fallback:", exc)
+            chunks.append(chunk)
+
+        remaining = remaining[len(chunk):]
+
+    return " ".join(chunks).strip()
+
+
+def extract_structured_sections(text: str) -> dict:
     labels = {
         "question": ["OBJECTIVES", "OBJECTIVE", "AIMS", "AIM", "PURPOSE", "BACKGROUND AND OBJECTIVES"],
         "methods": ["METHODS", "METHOD", "DESIGN"],
@@ -186,85 +298,120 @@ def scientific_summary_from_abstract(title: str, abstract: str, journal: str, ye
         "limitations": ["LIMITATIONS", "STRENGTHS AND LIMITATIONS"],
     }
 
-    # Find labeled sections with a regex that tolerates "LABEL:" or "LABEL -".
     matches = []
-    upper = text.upper()
     for field, variants in labels.items():
         for label in variants:
-            pattern = re.compile(
-                rf'(?<!\w){re.escape(label)}\s*(?::|-)\s*',
-                flags=re.I
-            )
+            pattern = re.compile(rf'(?<!\w){re.escape(label)}\s*(?::|-)\s*', flags=re.I)
             m = pattern.search(text)
             if m:
                 matches.append((m.start(), m.end(), field))
                 break
 
     matches.sort(key=lambda x: x[0])
-
     sections = {}
     for i, (start_pos, end_pos, field) in enumerate(matches):
         stop = matches[i + 1][0] if i + 1 < len(matches) else len(text)
         sections[field] = text[end_pos:stop].strip(" ;.-")
+    return sections
 
-    # If the abstract is unstructured, keep a conservative lead from the first
-    # two sentences and use the whole text only as a source for manual review.
-    sentence_parts = re.split(r'(?<=[.!?])\s+', text)
-    first_sentences = " ".join(sentence_parts[:2]).strip()
 
-    question_raw = sections.get("question", "")
-    methods_raw = sections.get("methods", "")
-    findings_raw = sections.get("findings", "")
-    interpretation_raw = sections.get("interpretation", "")
-    limitations_raw = sections.get("limitations", "")
+def scientific_summary_from_abstract(title: str, abstract: str, journal: str, year: str, article_type: str = "research") -> dict:
+    """
+    Build Spanish summary from abstract, adapting the structure to article type.
+    """
+    text = clean_abstract(abstract)
+    if not text:
+        return {}
 
-    question = (
-        f"El objetivo fue {question_raw[0].lower() + question_raw[1:]}"
-        if question_raw else
-        "El abstract no presenta un apartado de objetivos explícito; la pregunta del estudio debe reconstruirse a partir del título y del contenido completo."
-    )
+    sections = extract_structured_sections(text)
 
-    methods = (
-        methods_raw
-        if methods_raw else
-        "El abstract no presenta un apartado de métodos estructurado; para describir con precisión el diseño y la muestra es necesario consultar la publicación original."
-    )
+    if article_type == "research":
+        question_raw = sections.get("question", "")
+        if question_raw:
+            sentences = re.split(r'(?<=[.!?])\s+', question_raw)
+            candidates = [
+                s.strip() for s in sentences
+                if any(term in s.lower() for term in [
+                    "evaluat", "assess", "aim", "determin", "examin",
+                    "compar", "investigat", "effect of", "effect on"
+                ])
+            ]
+            if candidates:
+                question_raw = " ".join(candidates[:2])
 
-    findings = (
-        findings_raw
-        if findings_raw else
-        "El abstract no presenta un apartado de resultados estructurado; los resultados concretos deben consultarse en la publicación original."
-    )
+        question = translate_to_spanish(question_raw) if question_raw else (
+            "El abstract no presenta un apartado de objetivos explícito; "
+            "la pregunta del estudio debe reconstruirse a partir del título y del artículo completo."
+        )
+        if question_raw and not question.lower().startswith(("el objetivo", "el estudio", "esta investigación")):
+            question = "El objetivo fue " + question.rstrip(".") + "."
 
-    interpretation = (
-        interpretation_raw
-        if interpretation_raw else
-        "El abstract no presenta una conclusión diferenciada; la interpretación debe limitarse a los resultados descritos y al diseño del estudio."
-    )
+        methods = translate_to_spanish(sections.get("methods", "")) if sections.get("methods") else (
+            "El abstract no presenta un apartado de métodos estructurado; "
+            "para describir con precisión el diseño y la muestra es necesario consultar la publicación original."
+        )
+        findings = translate_to_spanish(sections.get("findings", "")) if sections.get("findings") else (
+            "El abstract no presenta un apartado de resultados estructurado; "
+            "los resultados concretos deben consultarse en la publicación original."
+        )
+        interpretation = translate_to_spanish(sections.get("interpretation", "")) if sections.get("interpretation") else (
+            "El abstract no presenta una conclusión diferenciada; "
+            "la interpretación debe limitarse a los resultados descritos y al diseño del estudio."
+        )
+        limitations = translate_to_spanish(sections.get("limitations", "")) if sections.get("limitations") else ""
 
-    limitations = (
-        limitations_raw
-        if limitations_raw else
-        "El abstract no detalla limitaciones específicas; para valorarlas es necesario consultar el artículo completo."
-    )
+        lead_source = sections.get("findings") or sections.get("question") or ""
+        lead = translate_to_spanish(lead_source)
+        if lead and len(lead) > 550:
+            lead = lead[:547].rsplit(" ", 1)[0] + "..."
+        if not lead:
+            lead = "Resumen de los principales elementos descritos en el abstract."
 
-    # Lead: prefer a concrete objectives/results sentence; otherwise use a
-    # conservative statement that is still grounded in the abstract.
-    lead_source = question_raw or findings_raw or first_sentences
-    lead = (
-        lead_source[:450].strip()
-        if lead_source else
-        f"El artículo estudia {title}."
-    )
+        return {
+            "mode": "research",
+            "lead": lead,
+            "question": question[:1000],
+            "methods": methods[:1300],
+            "findings": findings[:1600],
+            "interpretation": interpretation[:1000],
+            "limitations": limitations[:1000],
+        }
 
+    # Review / perspective / editorial-style paper:
+    # Do not pretend it has participants or an intervention when it does not.
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    first = " ".join(sentences[:3]).strip()
+
+    if article_type == "review":
+        scope = sections.get("question") or first
+        synthesis = sections.get("findings") or sections.get("interpretation") or " ".join(sentences[2:6]).strip()
+        conclusion = sections.get("interpretation") or (
+            sentences[-1] if sentences else ""
+        )
+        return {
+            "mode": "review",
+            "lead": translate_to_spanish(synthesis)[:700],
+            "question": translate_to_spanish(scope)[:1100],
+            "methods": "",
+            "findings": translate_to_spanish(synthesis)[:1600],
+            "interpretation": translate_to_spanish(conclusion)[:1100],
+            "limitations": translate_to_spanish(sections.get("limitations", ""))[:1000],
+        }
+
+    # Commentary / perspective / editorial / unstructured narrative:
+    scope = first
+    synthesis = " ".join(sentences[3:7]).strip() or first
+    conclusion = sections.get("interpretation") or (sentences[-1] if sentences else "")
     return {
-        "lead": lead,
-        "question": question[:900],
-        "methods": methods[:1200],
-        "findings": findings[:1400],
-        "interpretation": interpretation[:900],
-        "limitations": limitations[:900],
+        "mode": "commentary",
+        "lead": translate_to_spanish(scope)[:700],
+        "question": translate_to_spanish(scope)[:1100],
+        "methods": "",
+        "findings": translate_to_spanish(synthesis)[:1600],
+        "interpretation": translate_to_spanish(conclusion)[:1100],
+        "limitations": translate_to_spanish(sections.get("limitations", ""))[:1000],
     }
+
 
 def journal_brand(journal: str) -> tuple[str, str]:
     x = (journal or "").lower()
@@ -326,9 +473,8 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
     interpretation = summary.get("interpretation") or (
         "La interpretación debe limitarse a lo que permiten sostener el diseño y los resultados descritos en el abstract."
     )
-    limitations = summary.get("limitations") or (
-        "El abstract no especifica limitaciones; consulte el artículo completo para una valoración detallada."
-    )
+    article_mode = summary.get("mode") or detect_article_type(meta)
+    limitations = summary.get("limitations", "").strip()
 
     authors_html = ", ".join(esc(a) for a in authors)
 
@@ -351,7 +497,7 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
 <meta name="description" content="{esc(lead[:155])}">
 <meta name="author" content="Miguel López Moreno">
 <link rel="canonical" href="https://nutreconciencia.com/articulos/{esc(slug)}/">
-<link rel="stylesheet" href="../../assets/styles.css?v=40">
+<link rel="stylesheet" href="../../assets/styles.css?v=42">
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(lead[:200])}">
 <meta property="og:type" content="article">
@@ -579,34 +725,34 @@ def render_page(meta: dict, summary: dict, slug: str) -> str:
     <div class="clean-divider"></div>
 
     <div class="clean-section">
-      <div class="clean-kicker">La pregunta</div>
-      <h2>¿Qué quiso estudiar?</h2>
+      <div class="clean-kicker">{f"LA PREGUNTA" if article_mode == "research" else "QUÉ ABORDA"}</div>
+      <h2>{f"¿Qué quiso estudiar?" if article_mode == "research" else "¿Qué cuestión aborda?"}</h2>
       <p>{esc(question)}</p>
     </div>
 
-    <div class="clean-section">
+    {f"""<div class="clean-section">
       <div class="clean-kicker">Qué hicieron</div>
       <h2>Diseño del estudio</h2>
       <p>{esc(methods)}</p>
-    </div>
+    </div>""" if article_mode == "research" and methods else ""}
 
     <div class="clean-section">
-      <div class="clean-kicker">Qué encontraron</div>
-      <h2>Principales resultados</h2>
+      <div class="clean-kicker">{f"QUÉ ENCONTRARON" if article_mode == "research" else "QUÉ APORTA"}</div>
+      <h2>{f"Principales resultados" if article_mode == "research" else "Qué aporta el artículo"}</h2>
       <p>{esc(findings)}</p>
     </div>
 
     <div class="clean-section">
-      <div class="clean-kicker">Interpretación</div>
-      <h2>Cómo interpretarlo</h2>
+      <div class="clean-kicker">INTERPRETACIÓN</div>
+      <h2>{f"Cómo interpretarlo" if article_mode == "research" else "Qué significa"}</h2>
       <p>{esc(interpretation)}</p>
     </div>
 
-    <div class="clean-section">
+    {f"""<div class="clean-section">
       <div class="clean-kicker">Contexto</div>
       <h2>Limitaciones y contexto</h2>
       <p>{esc(limitations)}</p>
-    </div>
+    </div>""" if limitations else ""}
 
     <div class="clean-section">
       <div class="clean-kicker">Publicación original</div>
@@ -944,13 +1090,14 @@ def main():
         )
 
         meta = {
-            "title": pm.get("title") or title or existing_meta.get("title") or "",
+            "title": pm.get("title") or cr.get("title") or title or existing_meta.get("title") or "",
             "year": pm.get("year") or cr.get("year") or year or existing_meta.get("year") or "",
             "journal": pm.get("journal") or cr.get("journal") or journal or existing_meta.get("journal") or "",
             "authors": authors,
             "doi": pm.get("doi") or cr.get("doi") or doi or existing_meta.get("doi") or "",
             "pmid": pmid,
             "abstract": clean_abstract(abstract),
+            "publication_types": pm.get("publication_types") or existing_meta.get("publication_types") or [],
             "orcid": ORCID,
             "orcid_work_id": orcid_work_id or existing_meta.get("orcid_work_id") or "",
         }
@@ -961,12 +1108,15 @@ def main():
         )
         print("Scientific summary: generated locally from abstract; no OpenAI API required.")
 
+        article_type = detect_article_type(meta)
         summary = scientific_summary_from_abstract(
             meta["title"],
             meta["abstract"],
             meta["journal"],
             meta["year"],
+            article_type,
         )
+        summary["article_type"] = article_type
 
         orcid_file.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
         page_slug = folder.name
