@@ -1,0 +1,30 @@
+name: Publication identity groups
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  group:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build publication groups
+        run: python scripts/audit_publication_groups.py
+
+      - name: Commit audit reports
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add publication_groups_report.md publication_groups.csv
+          git diff --cached --quiet || git commit -m "chore: audit publication identity groups"
+          git push
