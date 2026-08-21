@@ -1,5 +1,6 @@
 # BEGIN NUTRECONCIENCIA SEO REDIRECTS
-# Canonicalize directory index URLs
+# Canonicalize root and section index URLs
+Redirect 301 /index.html /
 Redirect 301 /articulos/index.html /articulos/
 Redirect 301 /prensa/index.html /prensa/
 Redirect 301 /libro/index.html /libro/
