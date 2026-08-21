@@ -1,0 +1,39 @@
+name: Clean legacy article Person schema
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  clean-person:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Clean legacy standalone Person schema
+        run: python scripts/clean_legacy_article_person_schema.py
+
+      - name: Verify no standalone legacy Person remains
+        run: |
+          if grep -R 'data-schema="person-miguel"' -n articulos/*/index.html; then
+            echo "Legacy person-miguel schema still found."
+            exit 1
+          fi
+          echo "No legacy person-miguel schema found."
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add articulos
+          git diff --cached --quiet || git commit -m "chore: clean legacy article Person schema"
+          git push
