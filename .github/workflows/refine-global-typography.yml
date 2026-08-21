@@ -1,0 +1,36 @@
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  typography:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Apply global typography
+        run: python scripts/refine_global_typography.py
+
+      - name: Verify typography tokens
+        run: |
+          grep -n 'Source Serif 4' assets/styles.css
+          grep -n 'Inter' assets/styles.css
+          grep -n 'fonts.googleapis.com/css2?family=Inter' assets/styles.css
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add assets/styles.css
+          git diff --cached --quiet || git commit -m "style: refine global typography"
+          git push
