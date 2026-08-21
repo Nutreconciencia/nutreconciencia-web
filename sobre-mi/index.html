@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
 <title>Sobre mí | Miguel López Moreno</title>
-<meta name="description" content="Trayectoria de Miguel López Moreno entre investigación, docencia y divulgación científica en nutrición, salud metabólica y sostenibilidad.">
+
+<meta
+  name="description"
+  content="Trayectoria de Miguel López Moreno entre investigación, docencia y divulgación científica en nutrición, salud metabólica y sostenibilidad."
+>
+
 <link rel="canonical" href="https://nutreconciencia.com/sobre-mi/">
 <link rel="stylesheet" href="../assets/styles.css?v=28">
 
@@ -15,10 +20,11 @@
   --muted: rgba(37,37,33,.70);
   --line: rgba(37,37,33,.13);
   --soft: #f4f0e7;
-  --paper: #fbf9f3;
   max-width: 1180px;
   margin: 0 auto;
 }
+
+/* HERO */
 
 .about-hero {
   padding: 72px 28px 88px;
@@ -26,8 +32,8 @@
 
 .about-hero-grid {
   display: grid;
-  grid-template-columns: minmax(0,1.05fr) minmax(360px,.82fr);
-  gap: clamp(40px,6vw,86px);
+  grid-template-columns: minmax(0,1.05fr) minmax(320px,.72fr);
+  gap: clamp(40px,6vw,84px);
   align-items: center;
 }
 
@@ -54,20 +60,23 @@
   font-size: clamp(1.08rem,1.6vw,1.32rem);
   line-height: 1.65;
   color: var(--muted);
-  max-width: 760px;
+  max-width: 720px;
   margin: 0;
 }
 
+/* HERO IMAGE */
+
 .about-portrait {
-  position: relative;
+  max-width: 450px;
+  margin-left: auto;
 }
 
 .about-portrait img {
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
-  border-radius: 22px;
+  height: auto;
+  object-fit: contain;
+  border-radius: 18px;
   box-shadow: 0 18px 50px rgba(37,37,33,.12);
 }
 
@@ -78,8 +87,10 @@
   line-height: 1.5;
 }
 
+/* MAIN TEXT */
+
 .about-copy-wrap {
-  max-width: 880px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 0 28px 92px;
 }
@@ -110,6 +121,8 @@
   text-underline-offset: 3px;
 }
 
+/* BRIDGE */
+
 .about-bridge {
   margin: 52px 0;
   padding: 30px 34px;
@@ -121,7 +134,47 @@
   color: var(--ink);
 }
 
-.about-pillars {
+/* INLINE IMAGE + TEXT */
+
+.about-inline-media {
+  display: grid;
+  grid-template-columns: minmax(0,1.15fr) minmax(240px,.75fr);
+  gap: 34px;
+  align-items: center;
+  margin: 58px 0 46px;
+}
+
+.about-inline-media-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 16px;
+  box-shadow: 0 14px 34px rgba(37,37,33,.09);
+}
+
+.about-inline-media-copy {
+  padding: 4px 0;
+}
+
+.about-inline-kicker {
+  color: #5d6944;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.about-inline-media-copy p {
+  margin: 0;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+/* CREDENTIALS */
+
+.about-credentials {
   padding: 84px 28px;
   background: var(--soft);
 }
@@ -135,70 +188,12 @@
   margin: 0 0 44px;
 }
 
-.about-pillar-grid {
-  display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 16px;
-}
-
-.about-pillar {
-  padding: 28px;
-  background: rgba(255,255,255,.48);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-}
-
-.about-pillar-number {
-  color: #5d6944;
-  font-size: .7rem;
-  font-weight: 700;
-  letter-spacing: .16em;
-  margin-bottom: 18px;
-}
-
-.about-pillar h3 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.55rem;
-  font-weight: 500;
-  margin: 0 0 12px;
-}
-
-.about-pillar p {
-  color: var(--muted);
-  line-height: 1.7;
-  margin: 0;
-  font-size: .97rem;
-}
-
-.about-full-image {
-  padding: 84px 28px 0;
-}
-
-.about-full-image img {
-  display: block;
-  width: 100%;
-  max-height: 680px;
-  object-fit: cover;
-  object-position: center 43%;
-  border-radius: 22px;
-}
-
-.about-photo-note {
-  max-width: 760px;
-  margin: 14px auto 0;
-  font-size: .78rem;
-  line-height: 1.5;
-  color: rgba(37,37,33,.56);
-}
-
-.about-credentials {
-  padding: 84px 28px;
-}
-
 .about-credentials-grid {
   display: grid;
   grid-template-columns: repeat(2,1fr);
   gap: 0 60px;
+  max-width: 1050px;
+  margin: 0 auto;
 }
 
 .credential-v2 {
@@ -230,10 +225,12 @@
   font-size: .93rem;
 }
 
+/* FINAL */
+
 .about-final {
   max-width: 900px;
   margin: 0 auto;
-  padding: 0 28px 92px;
+  padding: 84px 28px 92px;
   text-align: center;
 }
 
@@ -256,28 +253,34 @@
   text-decoration: none;
 }
 
+/* RESPONSIVE */
+
 @media (max-width: 860px) {
+
   .about-hero-grid,
-  .about-pillar-grid,
-  .about-credentials-grid {
+  .about-credentials-grid,
+  .about-inline-media {
     grid-template-columns: 1fr;
+  }
+
+  .about-portrait {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  .about-inline-media-copy {
+    max-width: 700px;
   }
 
   .about-hero {
     padding-top: 48px;
   }
-
-  .about-portrait {
-    max-width: 620px;
-    margin: 0 auto;
-  }
 }
 
 @media (max-width: 620px) {
+
   .about-hero,
   .about-copy-wrap,
-  .about-pillars,
-  .about-full-image,
   .about-credentials,
   .about-final {
     padding-left: 18px;
@@ -292,8 +295,15 @@
   .about-bridge {
     padding: 24px 22px;
   }
+
+  .credential-v2 {
+    grid-template-columns: 55px minmax(0,1fr);
+    gap: 12px;
+  }
 }
 </style>
+
+<!-- PERSON SCHEMA -->
 
 <script type="application/ld+json">
 {
@@ -330,6 +340,7 @@
   ]
 }
 </script>
+
 </head>
 
 <body>
@@ -341,7 +352,12 @@
       Miguel López Moreno <span>/ Nutreconciencia</span>
     </a>
 
-    <button class="mobile-menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">
+    <button
+      class="mobile-menu-toggle"
+      type="button"
+      aria-label="Abrir menú"
+      aria-expanded="false"
+    >
       <span class="open">☰</span>
       <span class="close">×</span>
     </button>
@@ -357,14 +373,20 @@
   </div>
 </nav>
 
+
 <main class="about-v2">
+
+<!-- HERO -->
 
 <section class="research-hero about-hero">
 
   <div class="about-hero-grid">
 
     <div>
-      <div class="about-kicker">06 / Sobre mí</div>
+
+      <div class="about-kicker">
+        06 / Sobre mí
+      </div>
 
       <h1 class="about-title">
         De la investigación a la conversación pública.
@@ -375,6 +397,7 @@
         parte de una misma manera de entender la nutrición: preguntar, estudiar
         y compartir lo que sabemos —y también lo que todavía no sabemos.
       </p>
+
     </div>
 
     <div class="about-portrait">
@@ -398,6 +421,8 @@
 </section>
 
 
+<!-- BIOGRAPHY -->
+
 <section class="cream">
 
   <div class="about-copy-wrap">
@@ -417,10 +442,10 @@
       <p>
         La universidad ha sido el lugar desde el que he construido esa mirada.
         La investigación y la docencia han marcado buena parte de mi recorrido
-        y hoy dirijo el grupo <strong>Dieta, Salud Planetaria y Rendimiento</strong>
-        en la Universidad Francisco de Vitoria. Soy Doctor en Ciencias de la
-        Alimentación por el CSIC-UAM, Cum Laude, y estoy acreditado como
-        Contratado Doctor.
+        y hoy dirijo el grupo <strong>Dieta, Salud Planetaria y
+        Rendimiento</strong> en la Universidad Francisco de Vitoria. Soy Doctor
+        en Ciencias de la Alimentación por el CSIC-UAM, Cum Laude, y estoy
+        acreditado como Contratado Doctor.
       </p>
 
       <p>
@@ -439,6 +464,7 @@
         basadas en plantas, industria alimentaria y sostenibilidad.
       </p>
 
+
       <div class="about-bridge">
         Publicar un artículo no es el final de la investigación. Muchas veces
         es el principio de otra parte del trabajo: explicar qué sabemos, qué
@@ -446,12 +472,47 @@
         el contexto.
       </div>
 
+
       <p>
         De ahí nace también mi faceta de divulgación. Participo de forma
         continuada en congresos, jornadas, encuentros científicos y actividades
         de formación, intentando llevar la investigación a espacios donde pueda
         ser útil para profesionales, estudiantes y público general.
       </p>
+
+
+      <!-- SECOND IMAGE INTEGRATED WITH THE TEXT -->
+
+      <div class="about-inline-media">
+
+        <div class="about-inline-media-image">
+
+          <img
+            src="../assets/congresos-miguel.jpg"
+            alt="Miguel López Moreno participando en una actividad científica y de formación"
+            loading="lazy"
+          >
+
+        </div>
+
+        <div class="about-inline-media-copy">
+
+          <div class="about-inline-kicker">
+            Investigación · Docencia · Divulgación
+          </div>
+
+          <p>
+            La investigación también se construye en conversación: en congresos,
+            aulas, entrevistas, podcasts y encuentros con otros profesionales.
+            Esta parte pública de mi trabajo forma parte de la misma inquietud
+            que guía mi investigación: acercar la evidencia sin perder su
+            complejidad.
+          </p>
+
+        </div>
+
+      </div>
+
 
       <p>
         También desarrollo parte de mi actividad docente y divulgativa junto a
@@ -466,12 +527,14 @@
         conocimiento en nutrición y dietética.
       </p>
 
+
       <p>
         Y ese mismo recorrido está detrás de
         <a
           href="https://nutreconciencia.com/libro/"
-          rel="noopener"
-        ><em>Comer mentiras</em></a>:
+        >
+          <em>Comer mentiras</em>
+        </a>:
         un libro que nace de años leyendo estudios, discutiendo resultados y
         viendo cómo una evidencia compleja puede acabar convertida en un titular
         demasiado sencillo. La intención no es enseñar al lector qué debe
@@ -486,87 +549,7 @@
 </section>
 
 
-<section class="about-pillars">
-
-  <div class="inner">
-
-    <h2 class="about-section-title">
-      Tres formas de hacer lo mismo.
-    </h2>
-
-    <div class="about-pillar-grid">
-
-      <article class="about-pillar">
-
-        <div class="about-pillar-number">
-          01 / INVESTIGACIÓN
-        </div>
-
-        <h3>Preguntar mejor</h3>
-
-        <p>
-          Estudiar cómo la alimentación se relaciona con la salud,
-          el rendimiento y la sostenibilidad, intentando mantener el contexto
-          cuando la evidencia llega a conclusiones complejas.
-        </p>
-
-      </article>
-
-
-      <article class="about-pillar">
-
-        <div class="about-pillar-number">
-          02 / DOCENCIA
-        </div>
-
-        <h3>Formar mejor</h3>
-
-        <p>
-          Llevar esa evidencia al aula y formar a profesionales capaces de
-          interpretar estudios, valorar incertidumbre y tomar decisiones
-          informadas.
-        </p>
-
-      </article>
-
-
-      <article class="about-pillar">
-
-        <div class="about-pillar-number">
-          03 / DIVULGACIÓN
-        </div>
-
-        <h3>Explicar mejor</h3>
-
-        <p>
-          Hacer comprensible la ciencia sin eliminar aquello que la hace
-          científica: el contexto, las limitaciones y la incertidumbre.
-        </p>
-
-      </article>
-
-    </div>
-
-  </div>
-
-</section>
-
-
-<section class="about-full-image">
-
-  <img
-    src="../assets/congresos-miguel.jpg"
-    alt="Miguel López Moreno participando en congresos y actividades científicas"
-    loading="lazy"
-  >
-
-  <div class="about-photo-note">
-    Congresos, jornadas, aulas, entrevistas y encuentros con otros profesionales
-    forman parte de la dimensión pública de mi trabajo.
-  </div>
-
-</section>
-
+<!-- CREDENTIALS -->
 
 <section class="about-credentials">
 
@@ -579,34 +562,51 @@
     <div class="about-credentials-grid">
 
       <div class="credential-v2">
+
         <div class="year">2017</div>
+
         <div>
           <strong>Grado en Nutrición Humana y Dietética</strong>
-          <span>Universidad de Granada.</span>
+          <span>
+            Universidad de Granada.
+          </span>
         </div>
+
       </div>
 
 
       <div class="credential-v2">
+
         <div class="year">2018</div>
+
         <div>
           <strong>Máster en Nutrición Humana y Dietética</strong>
-          <span>Posgrado especializado en nutrición.</span>
+          <span>
+            Posgrado especializado en nutrición.
+          </span>
         </div>
+
       </div>
 
 
       <div class="credential-v2">
+
         <div class="year">2022</div>
+
         <div>
           <strong>Doctor en Ciencias de la Alimentación</strong>
-          <span>CSIC-UAM · Cum Laude.</span>
+          <span>
+            CSIC-UAM · Cum Laude.
+          </span>
         </div>
+
       </div>
 
 
       <div class="credential-v2">
+
         <div class="year">2025</div>
+
         <div>
           <strong>Investigador Principal</strong>
           <span>
@@ -614,20 +614,28 @@
             de Vitoria.
           </span>
         </div>
+
       </div>
 
 
       <div class="credential-v2">
+
         <div class="year">2025</div>
+
         <div>
           <strong>Acreditación de Contratado Doctor</strong>
-          <span>ANECA.</span>
+          <span>
+            ANECA.
+          </span>
         </div>
+
       </div>
 
 
       <div class="credential-v2">
+
         <div class="year">2026</div>
+
         <div>
           <strong>
             Codirector del Máster de Formación Permanente en Alimentación
@@ -638,15 +646,28 @@
             sostenibilidad.
           </span>
         </div>
+
       </div>
 
 
       <div class="credential-v2">
+
         <div class="year">2026</div>
+
         <div>
-          <strong>Autor de <em>Comer mentiras</em></strong>
-          <span>Publicado por Espasa.</span>
+          <strong>
+            Autor de
+            <a href="https://nutreconciencia.com/libro/">
+              <em>Comer mentiras</em>
+            </a>
+          </strong>
+
+          <span>
+            Publicado por Espasa.
+          </span>
+
         </div>
+
       </div>
 
     </div>
@@ -656,12 +677,15 @@
 </section>
 
 
+<!-- FINAL -->
+
 <section class="about-final">
 
   <p>
     La divulgación, para mí, no es simplificar la ciencia:
     es hacerla comprensible sin quitarle el contexto.
   </p>
+
 
   <div class="about-links">
 
@@ -713,6 +737,7 @@
   <div class="footer-inner">
 
     <div>
+
       <div style="font-family:Georgia,serif;font-size:32px">
         Miguel López Moreno
       </div>
@@ -720,9 +745,11 @@
       <div style="margin-top:6px">
         @nutreconciencia
       </div>
+
     </div>
 
     <div class="footer-note">
+
       Ciencia de la nutrición, investigación y divulgación.<br>
 
       <a href="mailto:miguel@nutreconciencia.com">
@@ -730,6 +757,7 @@
       </a><br>
 
       © 2026 Miguel López Moreno.
+
     </div>
 
   </div>
