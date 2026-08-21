@@ -1,0 +1,38 @@
+name: Add Book schema
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  book-schema:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Add Book + WebPage schema
+        run: python scripts/add_book_schema.py
+
+      - name: Verify schema
+        run: |
+          grep -n 'nutreconciencia-book-schema' libro/index.html
+          grep -n 'https://nutreconciencia.com/libro/#book' libro/index.html
+          grep -n 'https://nutreconciencia.com/#person' libro/index.html
+          grep -n 'comer-mentiras.jpg' libro/index.html
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add libro/index.html
+          git diff --cached --quiet || git commit -m "chore: add Book schema to book page"
+          git push
