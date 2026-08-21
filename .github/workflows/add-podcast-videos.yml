@@ -1,0 +1,53 @@
+name: Add YouTube videos to podcasts
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  add-videos:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Add YouTube videos
+        run: python scripts/add_podcast_videos.py
+
+      - name: Verify all 8 videos
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("podcasts/index.html").read_text(encoding="utf-8", errors="ignore")
+          ids = [
+              "jKE1a4uyZCQ",
+              "LoQOe_mDVm8",
+              "ep0oSj3-RqA",
+              "IGBHtFiPXOY",
+              "eu0vZQ81IvU",
+              "2-0vdBPhaWA",
+              "_Kr7a3Aptyc",
+              "j0KFL6aICBY",
+          ]
+          missing = [i for i in ids if f"youtube.com/watch?v={i}" not in text]
+          if missing:
+              print("Missing:", missing)
+              raise SystemExit(1)
+          print("All 8 YouTube videos verified.")
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add podcasts/index.html
+          git diff --cached --quiet || git commit -m "content: add YouTube videos to podcasts"
+          git push
