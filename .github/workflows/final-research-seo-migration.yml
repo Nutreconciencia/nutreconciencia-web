@@ -1,0 +1,36 @@
+ame: Final research SEO migration
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Apply definitive publication migration
+        run: python scripts/final_research_seo_migration.py
+
+      - name: Show changes
+        run: |
+          git status --short
+          git diff -- sitemap.xml .htaccess
+
+      - name: Commit and push
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add sitemap.xml .htaccess
+          git diff --cached --quiet || git commit -m "chore: finalize research canonical URLs"
+          git push
