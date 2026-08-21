@@ -1,0 +1,31 @@
+name: Add DOI publications to research index
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Insert missing DOI publication cards
+        run: python scripts/add_doi_publications_to_research_index.py
+      - name: Verify new publication
+        run: |
+          grep -n "when-ultra-processing-obscures-sustainable-dietary-transitions" articulos/index.html
+          grep -n 'data-year="2026"' articulos/index.html
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add articulos/index.html
+          git diff --cached --quiet || git commit -m "chore: add DOI publication to research index"
+          git push
