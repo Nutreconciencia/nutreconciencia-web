@@ -24,12 +24,28 @@ jobs:
 
       - name: Verify canonical homepage links
         run: |
-          grep -n 'href="/articulos/"' index.html
-          grep -n 'href="/libro/"' index.html
-          grep -n 'href="/prensa/"' index.html
-          grep -n 'href="/podcasts/"' index.html
-          grep -n 'href="/sobre-mi/"' index.html
-          grep -n 'href="/articulos/omniveg/"' index.html
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("index.html").read_text(encoding="utf-8", errors="ignore")
+          expected = [
+              'href="/"',
+              'href="/articulos/"',
+              'href="/prensa/"',
+              'href="/libro/"',
+              'href="/sobre-mi/"',
+              'href="/podcasts/"',
+              'href="/articulos/plant-based-misinformation/"',
+              'href="/articulos/omniveg/"',
+              'href="/articulos/appearance-of-validity/"',
+          ]
+          missing = [x for x in expected if x not in text]
+          if missing:
+              print("MISSING:")
+              for x in missing:
+                  print(" -", x)
+              raise SystemExit(1)
+          print("All canonical homepage links verified.")
+          PY
 
       - name: Commit
         run: |
