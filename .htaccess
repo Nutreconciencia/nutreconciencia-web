@@ -1,16 +1,32 @@
-# BEGIN NUTRECONCIENCIA SEO REDIRECTS
-# Canonicalize root and section index URLs
-Redirect 301 /index.html /
-Redirect 301 /articulos/index.html /articulos/
-Redirect 301 /prensa/index.html /prensa/
-Redirect 301 /libro/index.html /libro/
-Redirect 301 /sobre-mi/index.html /sobre-mi/
-Redirect 301 /podcasts/index.html /podcasts/
+# BEGIN NUTRECONCIENCIA CANONICAL URL RULES
+RewriteEngine On
 
-# Canonicalize canonical article /index.html URLs
-Redirect 301 /articulos/omniveg/index.html /articulos/omniveg/
+# Root and section index.html -> trailing-slash URL
+RewriteCond %{THE_REQUEST} \s/+index\.html(?:[?\s]) [NC]
+RewriteRule ^index\.html$ / [R=301,L,NE]
 
-# Legacy article URLs
+RewriteCond %{THE_REQUEST} \s/+articulos/index\.html(?:[?\s]) [NC]
+RewriteRule ^articulos/index\.html$ /articulos/ [R=301,L,NE]
+
+RewriteCond %{THE_REQUEST} \s/+prensa/index\.html(?:[?\s]) [NC]
+RewriteRule ^prensa/index\.html$ /prensa/ [R=301,L,NE]
+
+RewriteCond %{THE_REQUEST} \s/+libro/index\.html(?:[?\s]) [NC]
+RewriteRule ^libro/index\.html$ /libro/ [R=301,L,NE]
+
+RewriteCond %{THE_REQUEST} \s/+sobre-mi/index\.html(?:[?\s]) [NC]
+RewriteRule ^sobre-mi/index\.html$ /sobre-mi/ [R=301,L,NE]
+
+RewriteCond %{THE_REQUEST} \s/+podcasts/index\.html(?:[?\s]) [NC]
+RewriteRule ^podcasts/index\.html$ /podcasts/ [R=301,L,NE]
+
+# Canonical article index.html -> article folder
+RewriteCond %{THE_REQUEST} \s/+articulos/([^?\s/]+)/index\.html(?:[?\s]) [NC]
+RewriteRule ^articulos/([^/]+)/index\.html$ /articulos/$1/ [R=301,L,NE]
+
+# Legacy article folders -> canonical targets.
+# The explicit /index.html variants are included so old indexed URLs jump
+# directly to the final canonical URL in one hop.
 Redirect 301 /articulos/are-plant-based-diets-detrimental-to-muscular-strength-a-systematic-review-and-meta-analys/ /articulos/plant-diets-muscular-strength/
 Redirect 301 /articulos/are-plant-based-diets-detrimental-to-muscular-strength-a-systematic-review-and-meta-analysis-of-rand/ /articulos/plant-diets-muscular-strength/
 Redirect 301 /articulos/breast-cancer-risk-and-mortality-and-adherence-to-plant-based-diets-a-systematic-review-an/ /articulos/breast-cancer-plant-based-diets/
@@ -45,9 +61,10 @@ Redirect 301 /articulos/the-impact-of-plant-based-proteins-on-muscle-mass-and-st
 Redirect 301 /articulos/the-omniveg-study-effects-of-transitioning-from-a-traditional-to-a-vegan-mediterranean-die/ /articulos/omniveg-fat-oxidation/
 Redirect 301 /articulos/the-omniveg-study-effects-of-transitioning-from-a-traditional-to-a-vegan-mediterranean-diet-on-fat-o/ /articulos/omniveg-fat-oxidation/
 Redirect 301 /articulos/the-omniveg-study-health-outcomes-of-shifting-from-a-traditional-to-a-vegan-mediterranean-diet-in-he/ /articulos/omniveg/
-Redirect 301 /articulos/the-omniveg-study-health-outcomes-of-shifting-from-a-traditional-to-a-vegan-mediterranean-diet-in-he/index.html /articulos/omniveg/
 Redirect 301 /articulos/ultra-processed-plant-foods-are-they-worse-than-their-unprocessed-animal-based-counterpart/ /articulos/ultra-processed-plant-foods/
 Redirect 301 /articulos/ultra-processed-plant-foods-are-they-worse-than-their-unprocessed-animal-based-counterparts/ /articulos/ultra-processed-plant-foods/
 Redirect 301 /articulos/vegan-versus-traditional-mediterranean-diet-effects-on-cardiometabolic-outcomes-in-women-w/ /articulos/fibroveg/
 Redirect 301 /articulos/vegan-versus-traditional-mediterranean-diet-effects-on-cardiometabolic-outcomes-in-women-with-fibrom/ /articulos/fibroveg/
-# END NUTRECONCIENCIA SEO REDIRECTS
+
+# END NUTRECONCIENCIA CANONICAL URL RULES
+
