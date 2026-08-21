@@ -9,6 +9,8 @@ REPLACEMENTS = {
     'href="articulos/index.html"': 'href="/articulos/"',
     'href="prensa/index.html"': 'href="/prensa/"',
     'href="libro/index.html"': 'href="/libro/"',
+    'href="sobre-mi/index.html"': 'href="/sobre-mi/"',
+    'href="sobre-mi/"': 'href="/sobre-mi/"',
     'href="podcasts/index.html"': 'href="/podcasts/"',
     'href="articulos/plant-based-misinformation/index.html"':
         'href="/articulos/plant-based-misinformation/"',
@@ -61,4 +63,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
