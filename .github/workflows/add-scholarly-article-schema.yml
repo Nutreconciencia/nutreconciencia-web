@@ -1,0 +1,36 @@
+name: Add ScholarlyArticle schema
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scholarly-schema:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Add ScholarlyArticle schema
+        run: python scripts/add_scholarly_article_schema.py
+
+      - name: Verify canonical article schema
+        run: |
+          grep -R "nutreconciencia-scholarly-article-schema" -n articulos/*/index.html | head -20
+          grep -R '"https://nutreconciencia.com/#person"' -n articulos/*/index.html | head -20
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add articulos
+          git diff --cached --quiet || git commit -m "chore: add ScholarlyArticle schema"
+          git push
