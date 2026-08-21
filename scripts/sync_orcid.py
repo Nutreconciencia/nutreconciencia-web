@@ -5,8 +5,7 @@ Sync public ORCID works into /articulos/.
 - ORCID is the inventory source.
 - PubMed is queried by DOI first, then by title.
 - Crossref is used as a fallback for metadata.
-- If OPENAI_API_KEY is present, a Spanish scientific summary is generated
-  via the OpenAI Responses API (model configurable with OPENAI_MODEL).
+- Scientific summaries are generated locally from the available abstract.
 - Existing manually curated article pages without orcid.json are preserved.
 """
 from __future__ import annotations
@@ -22,6 +21,47 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ART = ROOT / "articulos"
 ORCID = "0000-0003-0553-6210"
+
+PERSON_ID = "https://nutreconciencia.com/#person"
+ORCID_URL = "https://orcid.org/0000-0003-0553-6210"
+SCHOLAR_URL = "https://scholar.google.com/citations?user=FpU1uS4AAAAJ&hl=es"
+FIT_GENERATION_URL = "https://fitgeneration.es/equipo/miguel-lopez-moreno/"
+UPSA_MASTER_URL = "https://www.upsa.es/oferta-academica/master-de-formacion-permanente-en-alimentacion-plant-based-nutricion-industria-y-sostenibilidad"
+
+PERSON_JSONLD = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": PERSON_ID,
+    "name": "Miguel López Moreno",
+    "url": "https://nutreconciencia.com/",
+    "jobTitle": [
+        "Investigador principal del grupo Dieta, Salud Planetaria y Rendimiento",
+        "Codirector del Máster de Formación Permanente en Alimentación Plant-Based: Nutrición, industria y sostenibilidad"
+    ],
+    "worksFor": {
+        "@type": "CollegeOrUniversity",
+        "name": "Universidad Francisco de Vitoria",
+        "url": "https://www.ufv.es/"
+    },
+    "affiliation": [
+        {
+            "@type": "CollegeOrUniversity",
+            "name": "Universidad Pontificia de Salamanca",
+            "url": "https://www.upsa.es/"
+        },
+        {
+            "@type": "Organization",
+            "name": "Fit Generation",
+            "url": "https://fitgeneration.es/"
+        }
+    ],
+    "sameAs": [
+        ORCID_URL,
+        SCHOLAR_URL,
+        FIT_GENERATION_URL
+    ]
+}
+
 
 
 
@@ -584,7 +624,15 @@ def build_meta_description(meta: dict, summary: dict) -> str:
 
 
 def build_jsonld(meta: dict, summary: dict, slug: str) -> str:
-    authors = [{"@type": "Person", "name": a} for a in meta.get("authors", []) if a]
+    authors = []
+    for a in meta.get("authors", []):
+        if not a:
+            continue
+        if normalize_title_key(a) == normalize_title_key("Miguel López Moreno") or normalize_title_key(a) == normalize_title_key("Miguel López-Moreno"):
+            authors.append({"@type": "Person", "@id": PERSON_ID, "name": "Miguel López Moreno"})
+        else:
+            authors.append({"@type": "Person", "name": a})
+
     data = {
         "@context": "https://schema.org",
         "@type": "ScholarlyArticle",
@@ -598,6 +646,11 @@ def build_jsonld(meta: dict, summary: dict, slug: str) -> str:
             "name": meta.get("journal", "") or ""
         },
         "description": build_meta_description(meta, summary),
+        "about": {
+            "@type": "Person",
+            "@id": PERSON_ID,
+            "name": "Miguel López Moreno"
+        },
     }
     doi = meta.get("doi", "")
     pmid = meta.get("pmid", "")
@@ -1042,6 +1095,137 @@ def render_index_card(meta: dict, slug: str) -> str:
 </a>"""
 
 
+
+def sitemap_article_slugs() -> set[str]:
+    """Return /articulos/<slug>/ entries that are currently canonical in sitemap.xml."""
+    sitemap = ROOT / "sitemap.xml"
+    if not sitemap.exists():
+        return set()
+
+    try:
+        text = sitemap.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return set()
+
+    slugs = set()
+    for loc in re.findall(r"<loc>\s*(https?://nutreconciencia\.com/articulos/([^<]+?)/?)\s*</loc>", text, flags=re.I):
+        slug = loc[1].strip("/")
+        if slug:
+            slugs.add(slug)
+    return slugs
+
+
+def build_article_identity_groups() -> dict:
+    """
+    Group ORCID article folders by DOI, PMID, ORCID work id and normalized title.
+    Canonical selection prefers the folder already present in sitemap.xml.
+    """
+    groups = {}
+    canonical_slugs = sitemap_article_slugs()
+
+    folders = []
+    for folder in ART.iterdir():
+        if not folder.is_dir():
+            continue
+        meta = load_local_meta(folder)
+        if not meta:
+            continue
+        folders.append((folder, meta))
+
+    visited = set()
+    mappings = []
+
+    # Find duplicates by strongest shared identity.
+    for i, (folder, meta) in enumerate(folders):
+        if folder.name in visited:
+            continue
+
+        ident = identity_from_meta(meta)
+        candidates = [(folder, meta)]
+        for j in range(i + 1, len(folders)):
+            other_folder, other_meta = folders[j]
+            other_ident = identity_from_meta(other_meta)
+
+            same = False
+            for key in ("doi", "pmid", "orcid_work_id", "title"):
+                a = ident.get(key)
+                b = other_ident.get(key)
+                if a and b and a == b:
+                    same = True
+                    break
+
+            if same:
+                candidates.append((other_folder, other_meta))
+
+        if len(candidates) <= 1:
+            continue
+
+        # Prefer canonical folder present in sitemap. If multiple, prefer the
+        # shortest slug, which generally corresponds to the cleaner migrated URL.
+        sitemap_candidates = [
+            x for x in candidates if x[0].name in canonical_slugs
+        ]
+        pool = sitemap_candidates or candidates
+        canonical_folder = sorted(
+            pool,
+            key=lambda x: (len(x[0].name), x[0].name)
+        )[0][0]
+
+        for other_folder, _ in candidates:
+            if other_folder != canonical_folder:
+                mappings.append((other_folder.name, canonical_folder.name))
+                visited.add(other_folder.name)
+
+        visited.add(canonical_folder.name)
+
+    return {"mappings": mappings, "canonical_slugs": canonical_slugs}
+
+
+def update_legacy_redirects() -> int:
+    """
+    Write a managed Apache Redirect 301 block at the site root.
+
+    Old article URLs continue resolving but permanently redirect to the canonical
+    article URL. Existing unmanaged .htaccess content is preserved.
+    """
+    result = build_article_identity_groups()
+    mappings = sorted(set(result["mappings"]))
+
+    htaccess = ROOT / ".htaccess"
+    existing = ""
+    if htaccess.exists():
+        existing = htaccess.read_text(encoding="utf-8", errors="ignore")
+
+    begin = "# BEGIN NUTRECONCIENCIA MANAGED ARTICLE REDIRECTS"
+    end = "# END NUTRECONCIENCIA MANAGED ARTICLE REDIRECTS"
+
+    managed = [begin]
+    for old_slug, new_slug in mappings:
+        managed.append(
+            f"Redirect 301 /articulos/{old_slug}/ /articulos/{new_slug}/"
+        )
+    managed.append(end)
+    managed_block = "\n".join(managed)
+
+    pattern = re.compile(
+        rf"{re.escape(begin)}.*?{re.escape(end)}",
+        flags=re.S
+    )
+
+    if pattern.search(existing):
+        updated = pattern.sub(managed_block, existing)
+    else:
+        updated = (existing.rstrip() + "\n\n" if existing.strip() else "") + managed_block + "\n"
+
+    if updated != existing:
+        htaccess.write_text(updated, encoding="utf-8")
+
+    # Turn legacy cards into non-indexed redirects if they happen to remain in
+    # /articulos/index.html; the index cleanup below also removes their cards.
+    print(f"Legacy article redirects prepared: {len(mappings)}")
+    return len(mappings)
+
+
 def update_research_index() -> None:
     """
     Synchronize /articulos/index.html without relying on a brittle closing marker.
@@ -1102,6 +1286,7 @@ def update_research_index() -> None:
 
         unique_cards.append(f'<a class="paper-cover"{attrs}</a>')
 
+    redirect_map = dict(build_article_identity_groups()["mappings"])
     candidates = []
     for folder in sorted(ART.iterdir()):
         if not folder.is_dir():
@@ -1124,6 +1309,8 @@ def update_research_index() -> None:
             continue
 
         slug = folder.name
+        if slug in redirect_map:
+            continue
         href = f"{slug}/index.html"
         title_key = normalize_title_key(meta.get("title") or "")
 
@@ -1166,6 +1353,197 @@ def update_research_index() -> None:
         f"added {added} missing publication cards; "
         f"total cards kept {len(unique_cards)}."
     )
+
+
+def normalize_site_urls() -> None:
+    """
+    Normalize internal nav links and Open Graph/canonical URLs across all HTML.
+    """
+    labels = {
+        "Investigación": "/articulos/",
+        "Prensa": "/prensa/",
+        "Libro": "/libro/",
+        "Sobre mí": "/sobre-mi/",
+        "Podcasts": "/podcasts/",
+    }
+
+    for path in ROOT.rglob("*.html"):
+        if any(part in {".git", ".github"} for part in path.parts):
+            continue
+
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+
+        original = content
+
+        # Site-wide nav: target anchors by their visible labels rather than
+        # assuming a particular relative depth.
+        for label, target in labels.items():
+            pattern = re.compile(
+                rf'(<a\b[^>]*\bhref=")[^"]*("\s*>\s*{re.escape(label)}\s*</a>)',
+                flags=re.I
+            )
+            content = pattern.sub(rf'\g<1>{target}\g<2>', content)
+
+        # Home/brand link.
+        content = re.sub(
+            r'(<a\b[^>]*class="brand"[^>]*\bhref=")[^"]*(")',
+            r'\g<1>/\g<2>',
+            content,
+            flags=re.I
+        )
+
+        # Canonical and og:url -> absolute.
+        content = normalize_meta_url(content, "canonical", path)
+        content = normalize_meta_url(content, "og:url", path)
+
+        # og:image -> absolute.
+        content = normalize_og_image(content, path)
+
+        if content != original:
+            path.write_text(content, encoding="utf-8")
+
+
+def normalize_meta_url(content: str, kind: str, path: Path) -> str:
+    if kind == "canonical":
+        pattern = re.compile(
+            r'(<link\b[^>]*\brel="canonical"[^>]*\bhref=")([^"]+)(")',
+            flags=re.I
+        )
+    else:
+        pattern = re.compile(
+            r'(<meta\b[^>]*\bproperty="og:url"[^>]*\bcontent=")([^"]+)(")',
+            flags=re.I
+        )
+
+    def repl(match):
+        value = html.unescape(match.group(2))
+        if value.startswith("http://") or value.startswith("https://"):
+            return match.group(0)
+        rel_dir = path.relative_to(ROOT).parent.as_posix() + "/"
+        absolute = urllib.parse.urljoin("https://nutreconciencia.com/" + rel_dir, value)
+        return match.group(1) + absolute + match.group(3)
+
+    return pattern.sub(repl, content, count=1)
+
+
+def normalize_og_image(content: str, path: Path) -> str:
+    pattern = re.compile(
+        r'(<meta\b[^>]*\bproperty="og:image"[^>]*\bcontent=")([^"]+)(")',
+        flags=re.I
+    )
+
+    def repl(match):
+        value = html.unescape(match.group(2))
+        if value.startswith("http://") or value.startswith("https://"):
+            return match.group(0)
+        rel_dir = path.relative_to(ROOT).parent.as_posix() + "/"
+        absolute = urllib.parse.urljoin("https://nutreconciencia.com/" + rel_dir, value)
+        return match.group(1) + absolute + match.group(3)
+
+    return pattern.sub(repl, content, count=1)
+
+
+def ensure_person_schema_and_profile() -> None:
+    """
+    Add a Person JSON-LD entity and the user's current academic roles to the
+    homepage and /sobre-mi/ without replacing existing content.
+    """
+    person_json = json.dumps(PERSON_JSONLD, ensure_ascii=False)
+
+    targets = [
+        ROOT / "index.html",
+        ROOT / "sobre-mi" / "index.html",
+    ]
+
+    for path in targets:
+        if not path.exists():
+            continue
+
+        content = path.read_text(encoding="utf-8", errors="ignore")
+        original = content
+
+        # Add Person JSON-LD once.
+        if 'application/ld+json" data-schema="person-miguel"' not in content:
+            schema = f'<script type="application/ld+json" data-schema="person-miguel">{person_json}</script>'
+            content = re.sub(r'</head>', schema + '\n</head>', content, count=1, flags=re.I)
+
+        # Add a visible academic line on pages where a natural profile/timeline
+        # section is present.
+        role_line = (
+            '<p class="profile-role">Codirector del '
+            '<a href="' + UPSA_MASTER_URL + '" target="_blank" rel="noopener">'
+            'Máster de Formación Permanente en Alimentación Plant-Based: Nutrición, industria y sostenibilidad'
+            '</a> · Universidad Pontificia de Salamanca.</p>'
+        )
+
+        if "Codirector del Máster de Formación Permanente en Alimentación Plant-Based" not in content:
+            # Prefer inserting before the first footer/contact block.
+            insertion = re.search(r'(<footer\b|<div[^>]*class="footer)', content, flags=re.I)
+            if insertion:
+                content = content[:insertion.start()] + role_line + "\n" + content[insertion.start():]
+            else:
+                content = content.replace("</main>", role_line + "\n</main>", 1)
+
+        # Visible Fit Generation link, if absent.
+        if "fitgeneration.es/equipo/miguel-lopez-moreno" not in content:
+            fit_line = (
+                '<p class="profile-role">Investigador y docente en '
+                '<a href="' + FIT_GENERATION_URL + '" target="_blank" rel="noopener">'
+                'Fit Generation'
+                '</a>.</p>'
+            )
+            insertion = re.search(r'(<footer\b|<div[^>]*class="footer)', content, flags=re.I)
+            if insertion:
+                content = content[:insertion.start()] + fit_line + "\n" + content[insertion.start():]
+            else:
+                content = content.replace("</main>", fit_line + "\n</main>", 1)
+
+        if content != original:
+            path.write_text(content, encoding="utf-8")
+
+
+def update_root_schema_links() -> None:
+    """
+    Add an explicit Person JSON-LD node to article pages through ScholarlyArticle
+    references already generated in render_page(). This is kept separate so a
+    future regeneration does not lose the canonical entity relationship.
+    """
+    person_id = PERSON_ID
+    for path in ROOT.rglob("*.html"):
+        if "articulos" not in path.parts:
+            continue
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        if '"@id": "https://nutreconciencia.com/#person"' in content:
+            continue
+
+        # For already-generated article pages, add a tiny Person node only if they
+        # contain ScholarlyArticle JSON-LD.
+        if '"@type": "ScholarlyArticle"' in content:
+            node = json.dumps(
+                {
+                    "@context": "https://schema.org",
+                    "@type": "Person",
+                    "@id": person_id,
+                    "name": "Miguel López Moreno",
+                    "sameAs": [ORCID_URL, SCHOLAR_URL, FIT_GENERATION_URL],
+                },
+                ensure_ascii=False,
+            )
+            content = re.sub(
+                r'</head>',
+                f'<script type="application/ld+json" data-schema="person-miguel">{node}</script>\n</head>',
+                content,
+                count=1,
+                flags=re.I
+            )
+            path.write_text(content, encoding="utf-8")
+
 
 def main():
     ART.mkdir(exist_ok=True)
@@ -1295,7 +1673,15 @@ def main():
         print("Updated:", folder.name)
 
     update_research_index()
-    print(f"ORCID sync complete. Updated {updated} article pages. Duplicate-safe identity matching enabled.")
+    legacy_count = update_legacy_redirects()
+    normalize_site_urls()
+    ensure_person_schema_and_profile()
+    update_root_schema_links()
+    print(
+        f"ORCID sync complete. Updated {updated} article pages. "
+        f"Legacy 301 redirects: {legacy_count}. "
+        f"Site-wide SEO URL/schema hygiene applied."
+    )
 
 
 if __name__ == "__main__":
