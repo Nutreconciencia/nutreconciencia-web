@@ -1,3 +1,19 @@
+name: Deploy website to Namecheap
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Upload website
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
