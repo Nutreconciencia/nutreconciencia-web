@@ -1,0 +1,36 @@
+name: Editorial press page copy
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  editorial:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Apply editorial press copy
+        run: python scripts/editorial_press_page_copy.py
+
+      - name: Show result
+        run: |
+          echo "Editorial copy workflow completed."
+          git diff --stat
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add prensa
+          git diff --cached --quiet || git commit -m "content: refine press page editorial copy"
+          git push
