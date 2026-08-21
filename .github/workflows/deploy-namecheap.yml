@@ -1,20 +1,4 @@
-name: Deploy website to Namecheap
-
-"on":
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Deploy to Namecheap
+      - name: Upload website
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -24,8 +8,40 @@ jobs:
           port: 21
           local-dir: ./
           server-dir: ${{ secrets.FTP_DIRECTORY }}
+          log-level: verbose
           exclude: |
             **/.git/**
             **/.github/**
             **/README.md
             **/scripts/**
+
+      - name: Upload .htaccess explicitly
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIRECTORY: ${{ secrets.FTP_DIRECTORY }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from ftplib import FTP_TLS
+
+          host = os.environ["FTP_HOST"]
+          username = os.environ["FTP_USERNAME"]
+          password = os.environ["FTP_PASSWORD"]
+          server_dir = os.environ["FTP_DIRECTORY"].rstrip("/")
+
+          ftp = FTP_TLS()
+          ftp.connect(host, 21, timeout=60)
+          ftp.login(username, password)
+          ftp.prot_p()
+
+          if server_dir:
+              ftp.cwd(server_dir)
+
+          with open(".htaccess", "rb") as f:
+              ftp.storbinary("STOR .htaccess", f)
+
+          print("Uploaded .htaccess to", server_dir or "/")
+          ftp.quit()
+          PY
