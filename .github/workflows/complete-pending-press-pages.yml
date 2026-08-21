@@ -1,0 +1,49 @@
+name: Complete pending press pages
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  complete:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Complete pending press pages
+        run: python scripts/complete_pending_press_pages.py
+
+      - name: Verify the 12 pages
+        run: |
+          count=$(grep -R -l 'id="nutreconciencia-press-schema"' \
+            prensa/20minutos-piramide \
+            prensa/actual-fruveg \
+            prensa/agencia-sinc-nutricion \
+            prensa/el-mundo-omniveg \
+            prensa/eldiario-greenwashing \
+            prensa/instituto-nutrigenomica \
+            prensa/la-vanguardia-seeds \
+            prensa/la-voz-galicia-meat \
+            prensa/la-voz-galicia-omniveg \
+            prensa/pcrm-omniveg \
+            prensa/plantrician-omniveg \
+            prensa/vozpopuli-omniveg | wc -l)
+          echo "Completed press schema pages: $count"
+          test "$count" -eq 12
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add prensa
+          git diff --cached --quiet || git commit -m "chore: complete press page SEO metadata"
+          git push
