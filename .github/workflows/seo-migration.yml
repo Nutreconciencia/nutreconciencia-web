@@ -1,0 +1,31 @@
+name: One-time SEO migration
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build legacy 301 redirects
+        run: python scripts/seo_migration.py
+
+      - name: Commit migration rules
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .htaccess
+          git diff --cached --quiet || git commit -m "chore: add canonical SEO redirects"
+          git push
