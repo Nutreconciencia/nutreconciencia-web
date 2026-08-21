@@ -1,0 +1,40 @@
+name: Normalize homepage internal links
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  normalize-home:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Normalize homepage internal links
+        run: python scripts/normalize_home_internal_links.py
+
+      - name: Verify canonical homepage links
+        run: |
+          grep -n 'href="/articulos/"' index.html
+          grep -n 'href="/libro/"' index.html
+          grep -n 'href="/prensa/"' index.html
+          grep -n 'href="/podcasts/"' index.html
+          grep -n 'href="/sobre-mi/"' index.html
+          grep -n 'href="/articulos/omniveg/"' index.html
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "fix: normalize homepage internal links"
+          git push
