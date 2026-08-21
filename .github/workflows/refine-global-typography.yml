@@ -1,3 +1,4 @@
+name: Refine global typography
 
 "on":
   workflow_dispatch:
