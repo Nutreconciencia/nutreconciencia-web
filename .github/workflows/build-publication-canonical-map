@@ -1,0 +1,30 @@
+name: Build definitive publication canonical map
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  map:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build canonical map
+        run: python scripts/build_publication_canonical_map.py
+
+      - name: Commit canonical map reports
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add publication_canonical_map.csv publication_canonical_map.md
+          git diff --cached --quiet || git commit -m "chore: build publication canonical map"
+          git push
