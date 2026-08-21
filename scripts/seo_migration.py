@@ -159,6 +159,16 @@ def main() -> None:
         "Redirect 301 /sobre-mi/index.html /sobre-mi/",
         "Redirect 301 /podcasts/index.html /podcasts/",
         "",
+        "# Canonicalize every canonical article /index.html URL",
+    ]
+
+    for canonical_slug in sorted(canon_slugs):
+        lines.append(
+            f"Redirect 301 /articulos/{canonical_slug}/index.html /articulos/{canonical_slug}/"
+        )
+
+    lines += [
+        "",
         "# Legacy article URLs",
     ]
 
@@ -166,6 +176,9 @@ def main() -> None:
         if old != new:
             lines.append(
                 f"Redirect 301 /articulos/{old}/ /articulos/{new}/"
+            )
+            lines.append(
+                f"Redirect 301 /articulos/{old}/index.html /articulos/{new}/"
             )
 
     lines.append(END)
@@ -184,6 +197,7 @@ def main() -> None:
         htaccess.write_text(updated, encoding="utf-8")
 
     print(f"Canonical article folders in sitemap: {len(canon)}")
+    print(f"Canonical /index.html redirects prepared: {len(canon)}")
     print(f"Legacy article folders scanned: {len(legacy)}")
     print(f"301 redirects prepared: {len(redirects)}")
     print(f"Ambiguous matches requiring manual review: {len(ambiguous)}")
