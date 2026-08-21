@@ -1,0 +1,39 @@
+name: Normalize Open Graph metadata
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  open-graph:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Normalize Open Graph and Twitter metadata
+        run: python scripts/normalize_open_graph.py
+
+      - name: Verify absolute Open Graph image
+        run: |
+          echo "Checking homepage..."
+          grep -n 'property="og:image"' index.html
+          grep -n 'name="twitter:card"' index.html
+          echo "Checking book..."
+          grep -n 'property="og:image"' libro/index.html || true
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .
+          git diff --cached --quiet || git commit -m "chore: normalize Open Graph metadata"
+          git push
