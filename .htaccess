@@ -1,3 +1,12 @@
+# Explicit canonical index.html redirects
+Redirect 301 /index.html /
+Redirect 301 /articulos/index.html /articulos/
+Redirect 301 /prensa/index.html /prensa/
+Redirect 301 /libro/index.html /libro/
+Redirect 301 /sobre-mi/index.html /sobre-mi/
+Redirect 301 /podcasts/index.html /podcasts/
+Redirect 301 /articulos/omniveg/index.html /articulos/omniveg/
+
 # BEGIN NUTRECONCIENCIA CANONICAL URL RULES
 RewriteEngine On
 
@@ -103,6 +112,5 @@ RewriteCond %{THE_REQUEST} \s/+articulos/([^?\s/]+)/index\.html(?:[?\s]) [NC]
 RewriteRule ^articulos/([^/]+)/index\.html$ /articulos/$1/ [R=301,L,NE]
 
 # END NUTRECONCIENCIA CANONICAL URL RULES
-
 
 
