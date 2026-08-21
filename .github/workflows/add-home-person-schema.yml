@@ -1,0 +1,36 @@
+name: Add homepage Person schema
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  person-schema:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Add Person schema to homepage
+        run: python scripts/add_home_person_schema.py
+
+      - name: Verify Person schema
+        run: |
+          grep -n 'nutreconciencia-person-schema' index.html
+          grep -n 'https://nutreconciencia.com/#person' index.html
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "chore: add homepage Person schema"
+          git push
