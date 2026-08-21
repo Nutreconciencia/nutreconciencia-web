@@ -1,0 +1,35 @@
+name: Fix final article redirects
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  redirects:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install final article rewrite redirects
+        run: python scripts/fix_final_article_redirects.py
+
+      - name: Show redirect rules
+        run: |
+          grep -n "acute-beetroot-juice-ingestion\|dietary-adaptation-of-non-heme-iron\|FINAL ARTICLE REWRITE" .htaccess
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .htaccess
+          git diff --cached --quiet || git commit -m "fix: finalize article legacy redirects"
+          git push
