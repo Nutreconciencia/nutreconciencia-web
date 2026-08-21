@@ -1,0 +1,41 @@
+name: Refine press publication sections
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Refine publication sections
+        run: python scripts/refine_press_publication_sections.py
+
+      - name: Verify no generic El Mundo sentence remains
+        run: |
+          if grep -R -n \
+            "El artículo publicado por El Mundo conserva la referencia original de la noticia" \
+            prensa/*/index.html; then
+            echo "Generic publication sentence still present."
+            exit 1
+          fi
+          echo "Generic El Mundo publication sentence removed."
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add prensa
+          git diff --cached --quiet || git commit -m "content: refine press publication sections"
+          git push
