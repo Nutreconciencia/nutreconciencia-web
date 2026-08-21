@@ -1,146 +1,181 @@
 #!/usr/bin/env python3
+"""
+STEP 8D — Normalize all press pages into one editorial structure.
+
+Runs against every prensa/*/index.html and uses the already existing page
+content as the factual source. It does NOT fetch external news websites.
+
+For each page it:
+- keeps the existing H1/title;
+- keeps the existing outlet/date when present;
+- extracts a substantive existing paragraph from the page body;
+- rewrites the three template areas into:
+    1) a specific lead based on the existing page content;
+    2) "La publicación" section with a concise source-grounded description;
+    3) "BREVE RESEÑA" with a neutral contextual note;
+- does not invent results, dates or details not already present in the page.
+
+It does not modify canonical, OG/Twitter, JSON-LD, sitemap.xml or .htaccess.
+"""
+
 from __future__ import annotations
 
-import csv
 import html
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PRESS = ROOT / "prensa"
-AUDIT = ROOT / "press_pages_audit.csv"
 
-PUBLISHERS = {
-    '20minutos-piramide': '20minutos',
-    'actual-fruveg': 'Actual FruVeg',
-    'agencia-sinc-nutricion': 'Agencia SINC',
-    'carne-roja': '—',
-    'el-mundo': 'el medio',
-    'el-mundo-omniveg': 'El Mundo',
-    'eldiario-greenwashing': 'elDiario.es',
-    'instituto-nutrigenomica': 'Instituto Nutrigenómica',
-    'la-vanguardia-seeds': 'La Vanguardia',
-    'la-voz-galicia-meat': 'La Voz de Galicia',
-    'la-voz-galicia-omniveg': 'La Voz de Galicia',
-    'pcrm-omniveg': 'Physicians Committee for Responsible Medicine',
-    'perfil-fit-generation': 'Fit Generation',
-    'plantrician-omniveg': 'Plantrician Project',
-    'podcast-dieta-mediterranea': 'Fit Generation',
-    'the-new-york-times': 'The New York Times',
-    'the-times': 'The Times',
-    'vozpopuli-omniveg': 'Vozpópuli',
-    'washington-post': 'The Washington Post',
-}
-
-GENERIC_LEAD_VARIANTS = [
+GENERIC_PATTERNS = [
     "Aparición pública vinculada a investigación, divulgación o análisis de nutrición y salud.",
-]
-
-GENERIC_PUBLICATION_VARIANTS = [
     "Esta ficha recoge el titular, el medio y la fecha y enlaza directamente a la fuente original.",
-]
-
-GENERIC_REVIEW_VARIANTS = [
     "Una ficha de prensa que recoge la aparición de Miguel López Moreno, resume brevemente su enfoque y enlaza a la publicación original.",
     "Una ficha de prensa que recoge la aparición de Miguel López Moreno y enlaza a la publicación original.",
     "Esta ficha recoge la aparición de Miguel López Moreno y enlaza a la publicación original.",
 ]
 
 def clean(v: str) -> str:
-    return re.sub(r"\s+", " ", html.unescape(v or "")).strip()
+    v = html.unescape(v or "")
+    return re.sub(r"\s+", " ", v).strip()
 
-def replace_first(text: str, variants: list[str], new: str) -> tuple[str, bool]:
-    for old in variants:
-        if old in text:
-            return text.replace(old, new, 1), True
-    return text, False
+def extract_h1(text: str) -> str:
+    m = re.search(r"<h1[^>]*>(.*?)</h1>", text, re.I | re.S)
+    return clean(re.sub(r"<[^>]+>", " ", m.group(1))) if m else ""
+
+def extract_meta_description(text: str) -> str:
+    m = re.search(
+        r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']*)["\']',
+        text, re.I | re.S
+    )
+    return clean(m.group(1)) if m else ""
+
+def extract_paragraphs(text: str) -> list[str]:
+    # Prefer the main article region where present.
+    main_match = re.search(
+        r"<main\b[^>]*>(.*?)</main>",
+        text, re.I | re.S
+    )
+    region = main_match.group(1) if main_match else text
+
+    paragraphs = []
+    for m in re.finditer(r"<p\b[^>]*>(.*?)</p>", region, re.I | re.S):
+        value = clean(re.sub(r"<[^>]+>", " ", m.group(1)))
+        if not value:
+            continue
+        if any(g.lower() in value.lower() for g in GENERIC_PATTERNS):
+            continue
+        if len(value) < 45:
+            continue
+        paragraphs.append(value)
+
+    return paragraphs
+
+def extract_outlet_and_date(text: str) -> tuple[str, str]:
+    # Common pattern: outlet and date in adjacent text.
+    # We do not create or alter this field if we cannot identify it.
+    year = re.search(r"\b(20\d{2})\b", text)
+    date = year.group(1) if year else ""
+
+    outlet_candidates = [
+        "EL MUNDO", "The New York Times", "The Times", "The Washington Post",
+        "20minutos", "La Vanguardia", "La Voz de Galicia", "Vozpópuli",
+        "Agencia SINC", "elDiario.es", "Plantrician Project",
+        "Physicians Committee for Responsible Medicine", "Actual FruVeg",
+        "Fit Generation", "Instituto Nutrigenómica"
+    ]
+
+    low = text.lower()
+    outlet = next((x for x in outlet_candidates if x.lower() in low), "")
+    return outlet, date
+
+def replace_generic(text: str, old: str, new: str) -> tuple[str, bool]:
+    if old not in text:
+        return text, False
+    return text.replace(old, new, 1), True
 
 def main():
-    if not AUDIT.exists():
-        raise FileNotFoundError("press_pages_audit.csv not found")
-
-    with AUDIT.open("r", encoding="utf-8", newline="") as f:
-        rows = list(csv.DictReader(f))
-
-    if not rows:
-        raise RuntimeError("press_pages_audit.csv is empty")
+    pages = sorted(PRESS.glob("*/index.html"))
+    if not pages:
+        raise RuntimeError("No press pages found.")
 
     modified = 0
-    generic_before = 0
-    generic_after = 0
     notes = []
 
-    for row in rows:
-        slug = clean(row.get("slug"))
-        title = clean(row.get("title"))
-        publisher = PUBLISHERS.get(slug, "el medio")
+    for page in pages:
+        text = page.read_text(encoding="utf-8", errors="ignore")
 
-        page = PRESS / slug / "index.html"
-        if not page.exists():
-            raise FileNotFoundError(page)
+        title = extract_h1(text)
+        description = extract_meta_description(text)
+        paragraphs = extract_paragraphs(text)
+        outlet, year = extract_outlet_and_date(text)
+
+        # Use the actual page's description/paragraph as factual source.
+        factual = description if len(description) >= 60 else (
+            paragraphs[0] if paragraphs else ""
+        )
 
         if not title:
-            notes.append(f"{slug}: no title in audit; page left unchanged")
+            notes.append(f"{page.parent.name}: no H1/title found")
             continue
 
-        text = page.read_text(encoding="utf-8", errors="ignore")
-        updated = text
+        if not factual:
+            factual = (
+                f"La publicación aborda el tema reflejado en el titular: "
+                f"“{title}”."
+            )
 
-        # Specific but deliberately conservative copy: based only on the
-        # existing title and identified outlet; no unverified study results
-        # or dates are introduced.
-        lead = (
-            f"La publicación de {publisher} recoge la aparición de Miguel López Moreno "
-            f"y aborda el tema reflejado en el titular: “{title}”."
-        )
-
+        lead = factual
         publication = (
-            f"El artículo publicado por {publisher} conserva la referencia original "
-            f"de la noticia y permite consultar directamente la pieza completa en el medio."
+            f"La pieza recoge información relacionada con «{title}»"
+            + (f" y fue publicada por {outlet}." if outlet else ".")
         )
 
-        review = (
-            f"Esta ficha reúne la aparición publicada por {publisher} y la mantiene "
-            f"vinculada a su fuente original, para contextualizar la presencia de Miguel "
-            f"López Moreno en medios de comunicación."
-        )
-
-        found_any = False
-
-        if any(v in updated for v in GENERIC_LEAD_VARIANTS):
-            generic_before += 1
-        updated, found = replace_first(updated, GENERIC_LEAD_VARIANTS, lead)
-        found_any = found_any or found
-
-        updated, found = replace_first(updated, GENERIC_PUBLICATION_VARIANTS, publication)
-        found_any = found_any or found
-
-        updated, found = replace_first(updated, GENERIC_REVIEW_VARIANTS, review)
-        found_any = found_any or found
-
-        # If the page uses a different pre-existing generic paragraph, do not
-        # overwrite it blindly; report it for manual review.
-        if found_any:
-            modified += 1
+        if paragraphs:
+            second = paragraphs[1] if len(paragraphs) > 1 else paragraphs[0]
+            review = second
         else:
-            notes.append(f"{slug}: no known generic template text found")
+            review = (
+                f"La noticia permite contextualizar la presencia de Miguel López Moreno "
+                f"en medios a partir del contenido de esta publicación."
+            )
 
-        page.write_text(updated, encoding="utf-8", errors="ignore")
+        updated = text
+        changed_here = False
+
+        # Replace known generic fragments wherever they occur.
+        for old in GENERIC_PATTERNS:
+            if old in updated:
+                # Choose semantic replacement according to the old wording.
+                if old == GENERIC_PATTERNS[0]:
+                    new = lead
+                elif old == GENERIC_PATTERNS[1]:
+                    new = publication
+                else:
+                    new = review
+                updated = updated.replace(old, new, 1)
+                changed_here = True
+
+        # If the page already has the desired non-generic copy, don't overwrite it.
+        # If none of the known generic fragments are present, leave page intact.
+        if changed_here:
+            page.write_text(updated, encoding="utf-8")
+            modified += 1
 
     print("=" * 72)
-    print("STEP 8C — NORMALIZE ALL PRESS PAGE COPY")
+    print("STEP 8D — NORMALIZE PRESS PAGE COPY")
     print("=" * 72)
-    print(f"Press pages in audit: {len(rows)}")
+    print(f"Press pages found: {len(pages)}")
     print(f"Pages modified: {modified}")
-    print(f"Pages with known generic lead before change: {generic_before}")
-    print(f"Pages requiring manual review: {len(notes)}")
-    print("")
+    print(f"Pages already non-generic / not changed: {len(pages) - modified}")
+    print("Source basis: existing page title/meta description/body only.")
+    print("No external news pages were fetched.")
+    print("No canonical, OG/Twitter, JSON-LD, sitemap or .htaccess changes.")
+
     if notes:
-        print("NOTES:")
+        print("\nNOTES:")
         for note in notes:
             print("-", note)
-    print("")
-    print("No canonical, Open Graph, Twitter, schema, sitemap or .htaccess rules were changed.")
 
 if __name__ == "__main__":
     main()
