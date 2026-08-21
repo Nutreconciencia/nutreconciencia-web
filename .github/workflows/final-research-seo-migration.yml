@@ -1,4 +1,4 @@
-name: Final research SEO migration
+name: Fix final article redirects
 
 "on":
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 jobs:
-  migrate:
+  redirects:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,18 +19,20 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Apply definitive publication migration
-        run: python scripts/final_research_seo_migration.py
+      - name: Install final article rewrite redirects
+        run: python scripts/fix_final_article_redirects.py
 
-      - name: Show changes
+      - name: Verify critical rules
         run: |
-          git status --short
-          git diff -- sitemap.xml .htaccess
+          grep -n "acute-beetroot-juice-ingestion-fails-to-improve-sprint-performance-and-neuromuscular-funct" .htaccess
+          grep -n "dietary-adaptation-of-non-heme-iron-absorption-in-vegans-a-controlled-trial" .htaccess
+          grep -n "FINAL ARTICLE REWRITE REDIRECTS" .htaccess
 
-      - name: Commit and push
+      - name: Commit
         run: |
           git config user.name "nutreconciencia-seo-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add sitemap.xml .htaccess
-          git diff --cached --quiet || git commit -m "chore: finalize research canonical URLs"
+          git add .htaccess
+          git diff --cached --quiet || git commit -m "fix: finalize article legacy redirects"
           git push
+
