@@ -1,0 +1,40 @@
+name: Fix DOI research index card structure
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-card:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fix new paper card structure
+        run: python scripts/fix_doi_research_index_card.py
+
+      - name: Verify card
+        run: |
+          grep -n 'href="/articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/"' articulos/index.html
+          if grep -n '<article class="paper-cover"' articulos/index.html; then
+            echo "Incorrect article.paper-cover structure still present."
+            exit 1
+          fi
+          echo "Research index card structure verified."
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add articulos/index.html
+          git diff --cached --quiet || git commit -m "fix: match DOI research card structure"
+          git push
