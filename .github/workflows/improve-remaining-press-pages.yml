@@ -22,25 +22,25 @@ jobs:
       - name: Improve remaining press pages
         run: python scripts/improve_remaining_press_pages.py
 
-      - name: Verify all 11 pages
+      - name: Verify no original generic lead remains
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          slugs = ['20minutos-piramide', 'actual-fruveg', 'agencia-sinc-nutricion', 'eldiario-greenwashing', 'instituto-nutrigenomica', 'la-vanguardia-seeds', 'la-voz-galicia-meat', 'la-voz-galicia-omniveg', 'pcrm-omniveg', 'plantrician-omniveg', 'vozpopuli-omniveg']
-          generic = "Aparición pública vinculada a investigación, divulgación o análisis de nutrición y salud."
-          found = []
-          for slug in slugs:
-              p = Path("prensa") / slug / "index.html"
-              text = p.read_text(encoding="utf-8", errors="ignore")
-              if generic in text:
-                  found.append(slug)
-          if found:
-              print("Generic copy still present in:")
-              for slug in found:
-                  print(" -", slug)
-              raise SystemExit(1)
-          print("All 11 remaining press pages have non-generic lead copy.")
-          PY
+          if grep -R -n \
+            "Aparición pública vinculada a investigación, divulgación o análisis de nutrición y salud." \
+            prensa/20minutos-piramide \
+            prensa/actual-fruveg \
+            prensa/agencia-sinc-nutricion \
+            prensa/eldiario-greenwashing \
+            prensa/instituto-nutrigenomica \
+            prensa/la-vanguardia-seeds \
+            prensa/la-voz-galicia-meat \
+            prensa/la-voz-galicia-omniveg \
+            prensa/pcrm-omniveg \
+            prensa/plantrician-omniveg \
+            prensa/vozpopuli-omniveg; then
+            echo "Original generic lead still present."
+            exit 1
+          fi
+          echo "Original generic lead not found in the 11 target pages."
 
       - name: Commit
         run: |
