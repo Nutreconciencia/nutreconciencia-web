@@ -1,4 +1,4 @@
-name: Add editorial summary to current DOI article
+name: Add paper by doi
 
 "on":
   workflow_dispatch:
