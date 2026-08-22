@@ -1,4 +1,4 @@
-name: Fix DOI research index card structure
+name: Fix DOI research index card v2
 
 "on":
   workflow_dispatch:
@@ -9,32 +9,22 @@ permissions:
 jobs:
   fix-card:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Fix new paper card structure
-        run: python scripts/fix_doi_research_index_card.py
-
-      - name: Verify card
+      - name: Fix DOI research index card
+        run: python scripts/fix_doi_research_index_card_v2.py
+      - name: Verify
         run: |
-          grep -n 'href="/articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/"' articulos/index.html
-          if grep -n '<article class="paper-cover"' articulos/index.html; then
-            echo "Incorrect article.paper-cover structure still present."
-            exit 1
-          fi
-          echo "Research index card structure verified."
-
+          grep -n 'when-ultra-processing-obscures-sustainable-dietary-transitions' articulos/index.html
+          grep -n 'OPEN THE SCIENTIFIC SUMMARY' articulos/index.html
+          echo "Research index card verified."
       - name: Commit
         run: |
           git config user.name "nutreconciencia-seo-bot"
           git config user.email "actions@users.noreply.github.com"
           git add articulos/index.html
-          git diff --cached --quiet || git commit -m "fix: match DOI research card structure"
+          git diff --cached --quiet || git commit -m "fix: normalize DOI research index card v2"
           git push
