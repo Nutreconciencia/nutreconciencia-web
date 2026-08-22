@@ -1,0 +1,38 @@
+name: Migrate existing DOI article v3
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Rebuild target article with final editorial template
+        run: python scripts/migrate_existing_doi_article_v3.py
+
+      - name: Verify generated page
+        run: |
+          grep -n 'styles.css?v=28' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          grep -n 'class="study-hero article-top"' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          grep -n 'class="study-layout article-layout"' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          grep -n 'id="nutreconciencia-scholarly-article-schema"' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          grep -n 'class="pill"' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add articulos/when-ultra-processing-obscures-sustainable-dietary-transitions
+          git diff --cached --quiet || git commit -m "fix: finalize DOI article editorial template"
+          git push
