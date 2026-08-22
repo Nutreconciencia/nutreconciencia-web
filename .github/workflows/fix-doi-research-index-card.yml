@@ -1,4 +1,4 @@
-name: Fix DOI research index card v2
+name: Fix DOI research index card
 
 "on":
   workflow_dispatch:
@@ -9,22 +9,29 @@ permissions:
 jobs:
   fix-card:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Fix DOI research index card
-        run: python scripts/fix_doi_research_index_card_v2.py
-      - name: Verify
+        run: python scripts/fix_doi_research_index_card.py
+
+      - name: Verify target card
         run: |
           grep -n 'when-ultra-processing-obscures-sustainable-dietary-transitions' articulos/index.html
           grep -n 'OPEN THE SCIENTIFIC SUMMARY' articulos/index.html
           echo "Research index card verified."
+
       - name: Commit
         run: |
           git config user.name "nutreconciencia-seo-bot"
           git config user.email "actions@users.noreply.github.com"
           git add articulos/index.html
-          git diff --cached --quiet || git commit -m "fix: normalize DOI research index card v2"
+          git diff --cached --quiet || git commit -m "fix: normalize DOI research index card"
           git push
