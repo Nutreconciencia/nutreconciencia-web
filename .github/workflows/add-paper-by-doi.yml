@@ -1,5 +1,4 @@
-name: Add paper by DOI
-
+nname: Add paper by DOI
 "on":
   workflow_dispatch:
     inputs:
@@ -7,10 +6,8 @@ name: Add paper by DOI
         description: "DOI del artículo"
         required: true
         type: string
-
 permissions:
   contents: write
-
 jobs:
   add-paper:
     runs-on: ubuntu-latest
@@ -23,19 +20,31 @@ jobs:
         run: python scripts/add_paper_by_doi.py "${{ inputs.doi }}"
       - name: Verify generated page
         run: |
+          python -m py_compile scripts/add_paper_by_doi.py
+          echo "Python syntax: PASS"
           python - <<'PY'
           import json
           from pathlib import Path
-          metas=sorted(Path('articulos').glob('*/metadata.json'), key=lambda p:p.stat().st_mtime, reverse=True)
-          if not metas: raise SystemExit('No metadata.json found')
-          meta=metas[0]; data=json.loads(meta.read_text(encoding='utf-8')); html=(meta.parent/'index.html').read_text(encoding='utf-8')
-          checks={'canonical':'<link rel="canonical"' in html,'v28':'styles.css?v=28' in html,'ScholarlyArticle':'id="nutreconciencia-scholarly-article-schema"' in html,'editorial-layout':'class="study-hero article-top"' in html and 'class="study-layout article-layout"' in html,'doi':'Ver DOI' in html}
-          for k,v in checks.items():
-              print(f'{k}: {"PASS" if v else "FAIL"}')
-              if not v: raise SystemExit(k)
-          print('PMID:',data.get('pmid') or 'not found')
-          print('Abstract:','FOUND' if data.get('abstract') else 'NOT FOUND')
-          print('Generated DOI paper verification: PASS')
+          metas = sorted(Path("articulos").glob("*/metadata.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+          if not metas:
+              raise SystemExit("No metadata.json found")
+          meta = metas[0]
+          data = json.loads(meta.read_text(encoding="utf-8"))
+          html = (meta.parent / "index.html").read_text(encoding="utf-8")
+          checks = {
+              "canonical": '<link rel="canonical"' in html,
+              "v28": 'styles.css?v=28' in html,
+              "ScholarlyArticle": 'id="nutreconciencia-scholarly-article-schema"' in html,
+              "paper-layout": 'class="study-hero article-top"' in html and 'class="study-layout article-layout"' in html,
+              "doi-button": 'Ver DOI' in html,
+          }
+          for key, ok in checks.items():
+              print(f"{key}: {'PASS' if ok else 'FAIL'}")
+              if not ok:
+                  raise SystemExit(f"Verification failed: {key}")
+          print("PMID:", data.get("pmid") or "not found")
+          print("Abstract:", "FOUND" if data.get("abstract") else "NOT FOUND")
+          print("Generated DOI paper verification: PASS")
           PY
       - name: Commit
         run: |
