@@ -1,27 +1,31 @@
-name: Add paper by DOI
+name: Add editorial summary to current DOI article
+
 "on":
   workflow_dispatch:
-    inputs:
-      doi:
-        description: "DOI del nuevo artículo"
-        required: true
-        type: string
+
 permissions:
   contents: write
+
 jobs:
-  add-paper:
+  update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Create publication from DOI
-        run: python scripts/add_paper_by_doi.py "${{ inputs.doi }}"
+      - name: Add source-based editorial summary
+        run: python scripts/add_editorial_summary_to_current_doi.py
+      - name: Verify
+        run: |
+          grep -n 'La heterogeneidad de los ultraprocesados' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          grep -n 'Procesamiento, sustitución y transición dietética' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          grep -n 'Implicaciones para dietas sostenibles' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          grep -n 'styles.css?v=28' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
       - name: Commit
         run: |
           git config user.name "nutreconciencia-seo-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add articulos
-          git diff --cached --quiet || git commit -m "feat: add publication from DOI"
+          git add articulos/when-ultra-processing-obscures-sustainable-dietary-transitions
+          git diff --cached --quiet || git commit -m "content: add editorial summary to DOI article"
           git push
