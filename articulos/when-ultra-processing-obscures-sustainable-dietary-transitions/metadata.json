@@ -9,5 +9,20 @@
   "year": "2026",
   "pmid": "",
   "publisher": "Frontiers Media SA",
-  "abstract": ""
+  "abstract": "",
+  "editorial_summary": "El artículo analiza las limitaciones de tratar todos los alimentos ultraprocesados como una categoría nutricional homogénea. Destaca que los alimentos incluidos en la misma categoría de procesamiento pueden diferir en composición nutricional y asociaciones con la salud, y que su interpretación debe considerar también los alimentos que sustituyen. Esta perspectiva es especialmente relevante para las transiciones hacia dietas más vegetales y sostenibles.",
+  "editorial_sections": [
+    {
+      "heading": "La heterogeneidad de los ultraprocesados",
+      "text": "Los alimentos clasificados como ultraprocesados no presentan necesariamente las mismas características nutricionales ni las mismas asociaciones con la salud. El artículo destaca que algunos subgrupos, como las carnes procesadas y las bebidas azucaradas, muestran asociaciones desfavorables, mientras que otros, como ciertos panes, cereales y alternativas vegetales, pueden mostrar patrones diferentes."
+    },
+    {
+      "heading": "Procesamiento, sustitución y transición dietética",
+      "text": "El posible efecto de aumentar un alimento depende también de qué alimento desplaza dentro de la dieta. Desde una perspectiva contrafactual, comparar los alimentos únicamente por su grado de procesamiento puede ocultar diferencias relevantes entre sustituciones dietéticas y entre los alimentos disponibles como alternativa."
+    },
+    {
+      "heading": "Implicaciones para dietas sostenibles",
+      "text": "El artículo plantea que algunos productos vegetales clasificados como ultraprocesados pueden facilitar la sustitución de alimentos de origen animal. Por ello, evaluarlos exclusivamente por su grado de procesamiento puede pasar por alto su posible función dentro de patrones dietéticos más saludables y sostenibles. Esto no implica que todos estos productos sean saludables por defecto, ya que su calidad nutricional sigue siendo variable."
+    }
+  ]
 }
