@@ -1,1 +1,61 @@
+name: Rebuild sitemap safely
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Rebuild valid sitemap
+        run: python scripts/rebuild_sitemap_safe.py
+
+      - name: Validate sitemap XML
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          import re
+
+          path = Path("sitemap.xml")
+          text = path.read_text(encoding="utf-8", errors="ignore")
+
+          if "https://nutreconciencia.com/https://" in text:
+              raise SystemExit("Malformed duplicated-domain URL found")
+
+          ET.parse(path)
+
+          urls = re.findall(r"<loc>([^<]+)</loc>", text)
+          print("Sitemap LOC entries:", len(urls))
+          print("Unique LOC entries:", len(set(urls)))
+
+          if len(urls) != len(set(urls)):
+              raise SystemExit("Duplicate sitemap URLs found")
+
+          expected = "https://nutreconciencia.com/articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/"
+          if expected not in urls:
+              raise SystemExit("New DOI article missing")
+
+          print("Sitemap XML verification: PASS")
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add sitemap.xml
+          git diff --cached --quiet || git commit -m "fix: rebuild valid sitemap XML"
+          git push
 
