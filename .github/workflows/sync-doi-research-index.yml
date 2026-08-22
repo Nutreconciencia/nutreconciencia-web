@@ -1,0 +1,52 @@
+name: Sync DOI research index
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync all DOI publications to research index
+        run: python scripts/sync_doi_research_index.py
+
+      - name: Verify target links
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          text = Path("articulos/index.html").read_text(encoding="utf-8", errors="ignore")
+          links = re.findall(r'href="/articulos/([^/]+)/"', text)
+
+          if len(links) != len(set(links)):
+              raise SystemExit("Duplicate article links found in research index")
+
+          target = "vegetarian-diets-in-female-athletes-performance-health-outcomes-and-the-implementation-gap"
+          if target not in links:
+              raise SystemExit("New DOI article not present in research index")
+
+          print("Unique article links in index:", len(set(links)))
+          print("Target DOI card: PASS")
+          print("Research index verification: PASS")
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add articulos/index.html
+          git diff --cached --quiet || git commit -m "fix: sync DOI publications to research index"
+          git push
