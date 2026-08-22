@@ -1,0 +1,29 @@
+name: Migrate existing DOI article final
+"on":
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Rebuild final DOI article
+        run: python scripts/migrate_existing_doi_article_final.py
+      - name: Verify final article
+        run: |
+          grep -n 'styles.css?v=28' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          grep -n 'class="study-hero article-top"' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          grep -n 'class="article-meta"' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          grep -n 'nutreconciencia-scholarly-article-schema' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          grep -n 'Ver DOI' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+      - name: Commit
+        run: |
+          git config user.name "nutreconciencia-seo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add articulos/when-ultra-processing-obscures-sustainable-dietary-transitions
+          git diff --cached --quiet || git commit -m "fix: finalize DOI article editorial content"
+          git push
