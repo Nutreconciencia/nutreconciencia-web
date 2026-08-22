@@ -1,31 +1,46 @@
-name: Add paper by doi
+name: Add paper by DOI
 
 "on":
   workflow_dispatch:
+    inputs:
+      doi:
+        description: "DOI del artículo"
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 jobs:
-  update:
+  add-paper:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Add source-based editorial summary
-        run: python scripts/add_editorial_summary_to_current_doi.py
-      - name: Verify
+      - name: Create paper from DOI
+        run: python scripts/add_paper_by_doi.py "${{ inputs.doi }}"
+      - name: Verify generated page
         run: |
-          grep -n 'La heterogeneidad de los ultraprocesados' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
-          grep -n 'Procesamiento, sustitución y transición dietética' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
-          grep -n 'Implicaciones para dietas sostenibles' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
-          grep -n 'styles.css?v=28' articulos/when-ultra-processing-obscures-sustainable-dietary-transitions/index.html
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          metas=sorted(Path('articulos').glob('*/metadata.json'), key=lambda p:p.stat().st_mtime, reverse=True)
+          if not metas: raise SystemExit('No metadata.json found')
+          meta=metas[0]; data=json.loads(meta.read_text(encoding='utf-8')); html=(meta.parent/'index.html').read_text(encoding='utf-8')
+          checks={'canonical':'<link rel="canonical"' in html,'v28':'styles.css?v=28' in html,'ScholarlyArticle':'id="nutreconciencia-scholarly-article-schema"' in html,'editorial-layout':'class="study-hero article-top"' in html and 'class="study-layout article-layout"' in html,'doi':'Ver DOI' in html}
+          for k,v in checks.items():
+              print(f'{k}: {"PASS" if v else "FAIL"}')
+              if not v: raise SystemExit(k)
+          print('PMID:',data.get('pmid') or 'not found')
+          print('Abstract:','FOUND' if data.get('abstract') else 'NOT FOUND')
+          print('Generated DOI paper verification: PASS')
+          PY
       - name: Commit
         run: |
           git config user.name "nutreconciencia-seo-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add articulos/when-ultra-processing-obscures-sustainable-dietary-transitions
-          git diff --cached --quiet || git commit -m "content: add editorial summary to DOI article"
+          git add articulos
+          git diff --cached --quiet || git commit -m "feat: add publication from DOI"
           git push
