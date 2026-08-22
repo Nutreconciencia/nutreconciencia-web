@@ -109,4 +109,3 @@ def main():
     print('='*72); print('NEW PAPER CREATED — DOI + PUBMED ABSTRACT'); print('='*72); print('DOI:',doi); print('Title:',title); print('Slug:',slug); print('PMID:',pmid or 'not found'); print('Abstract:','FOUND' if abstract else 'NOT FOUND'); print('CSS version:',CSS_VERSION); print('ScholarlyArticle schema: PASS')
 
 if __name__=='__main__': main()
-
