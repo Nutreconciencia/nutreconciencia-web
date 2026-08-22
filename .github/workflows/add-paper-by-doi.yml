@@ -1,4 +1,4 @@
-nname: Add paper by DOI
+name: Add paper by DOI
 "on":
   workflow_dispatch:
     inputs:
