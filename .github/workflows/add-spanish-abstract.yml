@@ -4,11 +4,11 @@ name: Add Spanish abstract to DOI paper
   workflow_dispatch:
     inputs:
       article_slug:
-        description: "Slug exacto de la ficha, sin / al principio ni al final"
+        description: "Slug del artículo. Puedes usar también articulos/slug."
         required: true
         type: string
       spanish_summary:
-        description: "Resumen en español. Separa párrafos con una línea en blanco."
+        description: "Resumen en español. Usa ||| para separar párrafos. Usa **negrita** y [[BIG]]texto grande[[/BIG]]."
         required: true
         type: string
 
@@ -20,11 +20,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -38,19 +36,25 @@ jobs:
         env:
           ARTICLE_SLUG: ${{ inputs.article_slug }}
         run: |
+          python -m py_compile scripts/add_spanish_abstract.py
+          echo "Python syntax: PASS"
+
           python - <<'PY'
-          import json, os
+          import json
+          import os
           from pathlib import Path
 
           slug = os.environ["ARTICLE_SLUG"].strip().strip("/")
+          slug = slug.removeprefix("articulos/")
+
           folder = Path("articulos") / slug
           html_path = folder / "index.html"
           meta_path = folder / "metadata.json"
 
           if not html_path.exists():
-              raise SystemExit("index.html no existe")
+              raise SystemExit(f"No existe {html_path}")
           if not meta_path.exists():
-              raise SystemExit("metadata.json no existe")
+              raise SystemExit(f"No existe {meta_path}")
 
           html = html_path.read_text(encoding="utf-8")
           meta = json.loads(meta_path.read_text(encoding="utf-8"))
