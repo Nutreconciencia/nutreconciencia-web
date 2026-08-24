@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.parse
 import urllib.request
+import urllib.error
 import xml.etree.ElementTree as ET
 from html import escape
 from pathlib import Path
@@ -20,20 +22,22 @@ UA = "NutreconcienciaWeb/1.0 (https://nutreconciencia.com/)"
 def clean(v):
     return re.sub(r"\s+", " ", v or "").strip()
 
-def get_json(url):
+def get_json(url, headers=None, data=None):
     req = urllib.request.Request(
         url,
-        headers={"User-Agent": UA, "Accept": "application/json"},
+        headers=headers or {"User-Agent": UA, "Accept": "application/json"},
+        data=data,
+        method="POST" if data is not None else "GET",
     )
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with urllib.request.urlopen(req, timeout=45) as r:
         return json.loads(r.read().decode("utf-8"))
 
-def get_text(url):
+def get_text(url, headers=None):
     req = urllib.request.Request(
         url,
-        headers={"User-Agent": UA, "Accept": "application/xml,text/xml,*/*"},
+        headers=headers or {"User-Agent": UA, "Accept": "application/xml,text/xml,*/*"},
     )
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with urllib.request.urlopen(req, timeout=45) as r:
         return r.read().decode("utf-8", errors="replace")
 
 def crossref(doi):
@@ -77,6 +81,40 @@ def pubmed_abstract(pmid):
     except Exception:
         return ""
 
+def translate_to_spanish(text):
+    key = os.environ.get("DEEPL_API_KEY", "").strip()
+    if not key:
+        raise RuntimeError(
+            "DEEPL_API_KEY no está configurada. Añádela como GitHub Actions secret."
+        )
+    payload = urllib.parse.urlencode({
+        "text": text,
+        "source_lang": "EN",
+        "target_lang": "ES",
+        "preserve_formatting": "1",
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api-free.deepl.com/v2/translate",
+        data=payload,
+        headers={
+            "Authorization": f"DeepL-Auth-Key {key}",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": UA,
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            result = json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"DeepL API error {exc.code}: {detail}") from exc
+
+    translations = result.get("translations", [])
+    if not translations:
+        raise RuntimeError("DeepL no devolvió ninguna traducción.")
+    return translations[0].get("text", "").strip()
+
 def year_of(item):
     for key in ("published-print", "published-online", "issued", "created"):
         parts = item.get(key, {}).get("date-parts", [])
@@ -96,7 +134,7 @@ def slugify(title):
     s = clean(title).lower().translate(str.maketrans("áéíóúüñ", "aeiouun"))
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", s)).strip("-")[:120].rstrip("-")
 
-def page(item, doi, slug, pmid, abstract):
+def build_page(item, doi, slug, pmid, abstract_en, abstract_es):
     title = clean((item.get("title") or [""])[0])
     journal = clean((item.get("container-title") or [""])[0]) or "Scientific publication"
     year = year_of(item)
@@ -104,8 +142,33 @@ def page(item, doi, slug, pmid, abstract):
     canonical = f"{BASE}/articulos/{slug}/"
     doi_url = f"https://doi.org/{doi}"
 
-    summary = abstract if abstract else (
-        f"Publicación científica de {journal}" + (f" ({year})." if year else ".")
+    if abstract_es:
+        lead = abstract_es
+        note = (
+            "Traducción al español del abstract publicado por la fuente científica original. "
+            "No sustituye al artículo científico completo."
+        )
+        content = (
+            '<h2 id="s1">Resumen del artículo</h2>'
+            + "".join(f"<p>{escape(p.strip())}</p>" for p in abstract_es.split("\n\n") if p.strip())
+        )
+        sidebar_label = "Resumen del artículo"
+    else:
+        lead = f"Publicación científica de {journal}" + (f" ({year})." if year else ".")
+        note = (
+            "No se encontró un abstract disponible para traducir. "
+            "Esta ficha contiene información bibliográfica."
+        )
+        content = (
+            '<h2 id="s1">Sobre esta publicación</h2>'
+            '<p>Esta ficha reúne los datos bibliográficos de la publicación y enlaza directamente con la fuente científica original.</p>'
+        )
+        sidebar_label = "Sobre esta publicación"
+
+    pubmed_url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else ""
+    pubmed_button = (
+        f'<a class="btn primary" href="{escape(pubmed_url)}" target="_blank" rel="noopener">Ver en PubMed ↗</a>'
+        if pmid else ""
     )
 
     schema = {
@@ -119,63 +182,28 @@ def page(item, doi, slug, pmid, abstract):
             "@id": PERSON,
             "name": "Miguel López Moreno"
         }],
-        "sameAs": [doi_url] + (
-            [f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"] if pmid else []
-        ),
+        "sameAs": [doi_url] + ([pubmed_url] if pmid else []),
         "isPartOf": {"@type": "Periodical", "name": journal},
     }
-
     if year:
         schema["datePublished"] = year
-    if abstract:
-        schema["description"] = abstract
+    if abstract_es:
+        schema["description"] = abstract_es
 
     meta = (
         f'<span class="pill">{escape(journal)}</span>'
         f'<span class="pill">{escape(year)}</span>'
-        f'<span class="pill">DOI</span>'
+        '<span class="pill">DOI</span>'
         + ('<span class="pill">PubMed</span>' if pmid else '')
     )
 
-    pubmed_button = (
-        f'<a class="btn primary" href="https://pubmed.ncbi.nlm.nih.gov/{escape(pmid)}/" '
-        'target="_blank" rel="noopener">Ver en PubMed ↗</a>'
-        if pmid else ""
-    )
-
-    note = (
-        "El resumen se basa en el abstract disponible en PubMed y no sustituye al artículo científico original."
-        if abstract else
-        "No se encontró un abstract estructurado en PubMed; esta ficha contiene información bibliográfica."
-    )
-
-    if abstract:
-        summary_html = (
-            f'<p class="summary-lead">{escape(abstract)}</p>'
-            f'<div class="article-note">{escape(note)}</div>'
-            '<h2 id="s1">Resumen del artículo</h2>'
-            f'<p>{escape(abstract)}</p>'
-        )
-        sidebar_label = "Resumen del artículo"
-    else:
-        summary_html = (
-            f'<p class="summary-lead">{escape(summary)}</p>'
-            f'<div class="article-note">{escape(note)}</div>'
-            '<h2 id="s1">Sobre esta publicación</h2>'
-            '<p>Esta ficha reúne los datos bibliográficos de la publicación y enlaza directamente con la fuente científica original.</p>'
-        )
-        sidebar_label = "Sobre esta publicación"
-
-    subject = urllib.parse.quote(
-        f"Solicitud de estudio completo — {title}"
-    )
+    subject = urllib.parse.quote(f"Solicitud de estudio completo — {title}")
     body = urllib.parse.quote(
         f"Hola Miguel,\n\nMe gustaría solicitar el estudio completo: {title}\n\nMuchas gracias."
     )
     mail = f"mailto:miguel@nutreconciencia.com?subject={subject}&body={body}"
 
-    # IMPORTANT: no f-string around the HTML template, so JavaScript braces
-    # cannot be interpreted as Python expressions.
+    # Deliberately avoids f-string interpolation across JavaScript.
     template = """<!doctype html><html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>__TITLE__ | Miguel López Moreno</title>
@@ -183,8 +211,9 @@ def page(item, doi, slug, pmid, abstract):
 <link rel="canonical" href="__CANONICAL__">
 <meta property="og:title" content="__TITLE__ | Miguel López Moreno">
 <meta property="og:description" content="__DESCRIPTION__">
-<meta property="og:type" content="article"><meta property="og:image" content="https://nutreconciencia.com/assets/miguel-lopez-moreno.jpg">
-<link rel="stylesheet" href="../../assets/styles.css?v=__CSS_VERSION__">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://nutreconciencia.com/assets/miguel-lopez-moreno.jpg">
+<link rel="stylesheet" href="../../assets/styles.css?v=__CSS__">
 <script type="application/ld+json" id="nutreconciencia-scholarly-article-schema">
 __SCHEMA__
 </script>
@@ -206,13 +235,18 @@ __SCHEMA__
 <div class="article-meta">__META__</div>
 </section>
 <section class="study-layout article-layout"><div id="resumen" class="study-main article-prose">
-__SUMMARY_HTML__
+<p class="summary-lead">__LEAD__</p>
+<div class="article-note">__NOTE__</div>
+__CONTENT__
 <h2 id="publicacion">Publicación original</h2><p><strong>__TITLE__</strong></p><p>__AUTHORS__</p>
 <div class="source-buttons"><a class="btn soft" href="__DOI_URL__" target="_blank" rel="noopener">Ver DOI ↗</a>__PUBMED_BUTTON__</div>
-</div><aside class="study-side article-sidebar"><div class="sidebar-card"><strong>En esta página</strong><div class="sidebar-links"><a href="#resumen">Resumen</a><a href="#s1">__SIDEBAR_LABEL__</a><a href="#publicacion">Publicación</a></div></div>
+</div><aside class="study-side article-sidebar"><div class="sidebar-card"><strong>En esta página</strong><div class="sidebar-links"><a href="#resumen">Resumen</a><a href="#s1">__SIDEBAR__</a><a href="#publicacion">Publicación</a></div></div>
 <div class="sidebar-card"><strong>Artículo original</strong><div><strong>Título</strong><br>__TITLE__</div></div></aside></section>
-<div class="study-request"><strong>¿Quieres consultar el estudio completo?</strong><a href="__MAIL__">Solicitar el estudio completo por email</a><small>Se abrirá un correo dirigido a miguel@nutreconciencia.com.</small></div>
-</main><footer><div class="footer-inner"><div><div style="font-family:Georgia,serif;font-size:32px">Miguel López Moreno</div><div style="margin-top:6px">@nutreconciencia</div></div><div class="footer-note">Ciencia de la nutrición, investigación y divulgación.<br><a href="mailto:miguel@nutreconciencia.com">miguel@nutreconciencia.com</a><br>© 2026 Miguel López Moreno.</div></div></footer>
+<div class="study-request"><strong>¿Quieres consultar el estudio completo?</strong>
+<a href="__MAIL__">Solicitar el estudio completo por email</a>
+<small>Se abrirá un correo dirigido a miguel@nutreconciencia.com.</small></div>
+</main><footer><div class="footer-inner"><div><div style="font-family:Georgia,serif;font-size:32px">Miguel López Moreno</div><div style="margin-top:6px">@nutreconciencia</div></div><div class="footer-note">Ciencia de la nutrición, investigación y divulgación.<br>
+<a href="mailto:miguel@nutreconciencia.com">miguel@nutreconciencia.com</a><br>© 2026 Miguel López Moreno.</div></div></footer>
 <script>
 document.querySelectorAll('.mobile-menu-toggle').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -225,24 +259,24 @@ document.querySelectorAll('.mobile-menu-toggle').forEach(btn=>{
 
     replacements = {
         "__TITLE__": escape(title),
-        "__DESCRIPTION__": escape(summary[:300]),
+        "__DESCRIPTION__": escape((abstract_es or lead)[:300]),
         "__CANONICAL__": canonical,
-        "__CSS_VERSION__": CSS_VERSION,
+        "__CSS__": CSS_VERSION,
         "__SCHEMA__": json.dumps(schema, ensure_ascii=False, indent=2),
         "__JOURNAL__": escape(journal),
         "__YEAR__": escape(year),
         "__META__": meta,
-        "__SUMMARY_HTML__": summary_html,
+        "__LEAD__": escape(lead),
+        "__NOTE__": escape(note),
+        "__CONTENT__": content,
         "__AUTHORS__": escape(authors),
         "__DOI_URL__": escape(doi_url),
         "__PUBMED_BUTTON__": pubmed_button,
-        "__SIDEBAR_LABEL__": escape(sidebar_label),
+        "__SIDEBAR__": escape(sidebar_label),
         "__MAIL__": mail,
     }
-
     for token, value in replacements.items():
         template = template.replace(token, value)
-
     return template
 
 def main():
@@ -262,12 +296,12 @@ def main():
         raise RuntimeError(f"La carpeta ya existe: {folder}")
 
     pmid = pubmed_id(doi)
-    abstract = pubmed_abstract(pmid)
+    abstract_en = pubmed_abstract(pmid)
+    abstract_es = translate_to_spanish(abstract_en) if abstract_en else ""
 
     folder.mkdir(parents=True)
-
     (folder / "index.html").write_text(
-        page(item, doi, slug, pmid, abstract),
+        build_page(item, doi, slug, pmid, abstract_en, abstract_es),
         encoding="utf-8",
     )
 
@@ -279,22 +313,24 @@ def main():
         "publisher": clean(item.get("publisher", "")),
         "year": year_of(item),
         "pmid": pmid,
-        "abstract": abstract,
+        "abstract_english": abstract_en,
+        "abstract_spanish": abstract_es,
+        "translation_provider": "DeepL" if abstract_es else "",
     }
-
     (folder / "metadata.json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
     print("=" * 72)
-    print("NEW PAPER CREATED — DOI + PUBMED ABSTRACT")
+    print("NEW PAPER CREATED — DOI + PUBMED + SPANISH ABSTRACT")
     print("=" * 72)
     print("DOI:", doi)
     print("Title:", title)
     print("Slug:", slug)
     print("PMID:", pmid or "not found")
-    print("Abstract:", "FOUND" if abstract else "NOT FOUND")
+    print("English abstract:", "FOUND" if abstract_en else "NOT FOUND")
+    print("Spanish translation:", "FOUND" if abstract_es else "NOT CREATED")
     print("CSS version:", CSS_VERSION)
     print("ScholarlyArticle schema: PASS")
 
