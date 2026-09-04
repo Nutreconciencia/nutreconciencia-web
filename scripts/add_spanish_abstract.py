@@ -14,13 +14,12 @@ ART = ROOT / "articulos"
 
 def render_inline(text: str) -> str:
     """
-    Render user-approved inline markup:
-    **bold**
-    [[BIG]]large text[[/BIG]]
+    Supported user markup:
+    **negrita**
+    [[BIG]]texto grande[[/BIG]]
     """
     text = escape(text, quote=False)
 
-    # BIG first
     text = re.sub(
         r"\[\[BIG\]\](.*?)\[\[/BIG\]\]",
         r'<span class="summary-big">\1</span>',
@@ -28,7 +27,6 @@ def render_inline(text: str) -> str:
         flags=re.S,
     )
 
-    # Bold
     text = re.sub(
         r"\*\*(.*?)\*\*",
         r"<strong>\1</strong>",
@@ -43,6 +41,7 @@ def split_paragraphs(summary: str) -> list[str]:
     """
     Preferred separator:
         |||
+
     Fallback:
         blank lines
     """
@@ -54,18 +53,17 @@ def split_paragraphs(summary: str) -> list[str]:
     return [p for p in parts if p]
 
 
-def summary_html(paragraphs: list[str]) -> str:
+def paragraphs_to_html(paragraphs: list[str]) -> str:
     return "\n".join(
-        f"<p>{render_inline(paragraph)}</p>"
-        for paragraph in paragraphs
+        f"<p>{render_inline(p)}</p>"
+        for p in paragraphs
     )
 
 
 def find_metadata_file(folder: Path) -> Path:
     """
-    Support both publication architectures:
-    - metadata.json -> DOI-created papers
-    - orcid.json    -> ORCID-managed papers
+    DOI-created papers use metadata.json.
+    ORCID-created papers use orcid.json.
     """
     metadata = folder / "metadata.json"
     orcid = folder / "orcid.json"
@@ -81,90 +79,126 @@ def find_metadata_file(folder: Path) -> Path:
     )
 
 
-def update_clean_paper(html: str, paragraphs: list[str]) -> str:
+def replace_clean_summary(html: str, first_paragraph: str) -> str:
     """
-    Update the current ORCID/clean-paper template.
+    Replace the paragraph inside the first .clean-summary block.
 
-    - First paragraph becomes the main scientific summary.
-    - All supplied paragraphs replace the automatically generated
-      English body sections before 'Publicación original'.
+    Uses the block boundary defined by the following .clean-divider,
+    so nested divs do not break the parser.
     """
 
-    if '<div class="clean-summary">' not in html:
-        raise RuntimeError("No se encontró .clean-summary.")
-
-    summary_start = html.find('<div class="clean-summary">')
-    summary_end = html.find('</div>', summary_start)
-
-    if summary_end == -1:
-        raise RuntimeError("No se pudo cerrar .clean-summary.")
-
-    summary_block = html[summary_start:summary_end + len('</div>')]
-
-    lead_match = re.search(
-        r'<p>(.*?)</p>',
-        summary_block,
-        flags=re.S,
+    pattern = re.compile(
+        r'(<div\s+class="clean-summary">.*?)(</div>\s*<div\s+class="clean-divider">)',
+        flags=re.S | re.I,
     )
 
-    if not lead_match:
+    match = pattern.search(html)
+
+    if not match:
+        raise RuntimeError(
+            "No se encontró el bloque .clean-summary seguido de .clean-divider."
+        )
+
+    block = match.group(1)
+
+    paragraph_match = re.search(
+        r"<p>(.*?)</p>",
+        block,
+        flags=re.S | re.I,
+    )
+
+    if not paragraph_match:
         raise RuntimeError(
             "No se encontró <p> dentro de .clean-summary."
         )
 
-    lead_html = render_inline(paragraphs[0])
-
-    new_summary_block = (
-        summary_block[:lead_match.start()]
-        + f"<p>{lead_html}</p>"
-        + summary_block[lead_match.end():]
+    new_block = (
+        block[:paragraph_match.start()]
+        + f"<p>{render_inline(first_paragraph)}</p>"
+        + block[paragraph_match.end():]
     )
 
-    html = (
-        html[:summary_start]
-        + new_summary_block
-        + html[summary_end + len('</div>'):]
-    )
+    return html[:match.start()] + new_block + match.group(2) + html[match.end():]
+
+
+def replace_clean_content(html: str, paragraphs: list[str]) -> str:
+    """
+    Replace the editorial content between .clean-divider and
+    'Publicación original'.
+
+    The original publication block and request box remain untouched.
+    """
 
     divider = '<div class="clean-divider"></div>'
+
     divider_pos = html.find(divider)
 
     if divider_pos == -1:
-        raise RuntimeError("No se encontró .clean-divider.")
+        raise RuntimeError(
+            "No se encontró .clean-divider."
+        )
 
-    publication_marker = '<div class="clean-section">\n      <div class="clean-kicker">Publicación original</div>'
+    publication_pattern = re.compile(
+        r'<div\s+class="clean-section">\s*'
+        r'<div\s+class="clean-kicker">Publicación original</div>',
+        flags=re.S | re.I,
+    )
 
-    publication_pos = html.find(publication_marker)
+    publication_match = publication_pattern.search(
+        html,
+        divider_pos + len(divider),
+    )
 
-    if publication_pos == -1:
+    if not publication_match:
         raise RuntimeError(
             "No se encontró la sección 'Publicación original'."
         )
 
-    analysis = (
-        '\n\n'
+    analysis_html = (
+        "\n\n"
         '<div class="clean-section">\n'
         '  <div class="clean-kicker">ANÁLISIS EN ESPAÑOL</div>\n'
         '  <h2>Lo que explica realmente el artículo</h2>\n'
-        f'  {summary_html(paragraphs)}\n'
+        f'  {paragraphs_to_html(paragraphs)}\n'
         '</div>\n\n'
     )
 
-    body_start = divider_pos + len(divider)
+    content_start = divider_pos + len(divider)
 
-    html = (
-        html[:body_start]
-        + analysis
-        + html[publication_pos:]
+    return (
+        html[:content_start]
+        + analysis_html
+        + html[publication_match.start():]
     )
 
-    return html
 
-
-def update_legacy_paper(html: str, paragraphs: list[str]) -> str:
+def update_clean_paper(
+    html: str,
+    paragraphs: list[str],
+) -> str:
     """
-    Support the previous article template using:
-    .summary-lead + <h2 id="s1">
+    Update current .clean-paper article pages.
+    """
+
+    updated = replace_clean_summary(
+        html,
+        paragraphs[0],
+    )
+
+    updated = replace_clean_content(
+        updated,
+        paragraphs,
+    )
+
+    return updated
+
+
+def update_legacy_paper(
+    html: str,
+    paragraphs: list[str],
+) -> str:
+    """
+    Support the older summary-lead / #s1 template.
     """
 
     lead_marker = '<p class="summary-lead">'
@@ -172,7 +206,7 @@ def update_legacy_paper(html: str, paragraphs: list[str]) -> str:
 
     if lead_start == -1:
         raise RuntimeError(
-            "No se encontró ni .clean-summary ni .summary-lead."
+            "No se encontró .summary-lead."
         )
 
     lead_end = html.find("</p>", lead_start)
@@ -184,16 +218,13 @@ def update_legacy_paper(html: str, paragraphs: list[str]) -> str:
 
     lead_end += len("</p>")
 
-    lead_html = render_inline(paragraphs[0])
-
     html = (
         html[:lead_start]
-        + f'<p class="summary-lead">{lead_html}</p>'
+        + f'<p class="summary-lead">{render_inline(paragraphs[0])}</p>'
         + html[lead_end:]
     )
 
     heading = '<h2 id="s1">'
-
     s1_start = html.find(heading)
 
     if s1_start == -1:
@@ -201,7 +232,10 @@ def update_legacy_paper(html: str, paragraphs: list[str]) -> str:
             "No se encontró la sección #s1."
         )
 
-    next_h2 = html.find("<h2 ", s1_start + len(heading))
+    next_h2 = html.find(
+        "<h2 ",
+        s1_start + len(heading),
+    )
 
     if next_h2 == -1:
         next_h2 = html.find(
@@ -216,16 +250,14 @@ def update_legacy_paper(html: str, paragraphs: list[str]) -> str:
 
     new_section = (
         '<h2 id="s1">Resumen del artículo</h2>'
-        + summary_html(paragraphs)
+        + paragraphs_to_html(paragraphs)
     )
 
-    html = (
+    return (
         html[:s1_start]
         + new_section
         + html[next_h2:]
     )
-
-    return html
 
 
 def main() -> None:
@@ -233,10 +265,14 @@ def main() -> None:
     summary = os.environ.get("SPANISH_SUMMARY", "").strip()
 
     if not slug:
-        raise SystemExit("ARTICLE_SLUG está vacío.")
+        raise SystemExit(
+            "ARTICLE_SLUG está vacío."
+        )
 
     if not summary:
-        raise SystemExit("SPANISH_SUMMARY está vacío.")
+        raise SystemExit(
+            "SPANISH_SUMMARY está vacío."
+        )
 
     slug = slug.removeprefix("articulos/")
 
@@ -270,10 +306,9 @@ def main() -> None:
 
     if not paragraphs:
         raise RuntimeError(
-            "No se encontraron párrafos válidos en el resumen."
+            "No se encontraron párrafos válidos."
         )
 
-    # Support the two article templates.
     if '<div class="clean-summary">' in html:
         updated = update_clean_paper(
             html,
@@ -293,7 +328,6 @@ def main() -> None:
             "La ficha no corresponde a una plantilla compatible."
         )
 
-    # Update metadata in whichever publication file the article uses.
     metadata["abstract_spanish"] = summary
     metadata["translation_provider"] = "manual"
     metadata["editorial_summary_source"] = "user_provided"
