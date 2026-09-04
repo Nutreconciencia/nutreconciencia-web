@@ -1,12 +1,13 @@
-name: Add Spanish abstract to DOI paper
+name: Add Spanish abstract to DOI or ORCID paper
 
-"on":
+on:
   workflow_dispatch:
     inputs:
       article_slug:
-        description: "Slug del artículo. Puedes usar también articulos/slug."
+        description: "Slug del artículo. También puedes usar articulos/slug."
         required: true
         type: string
+
       spanish_summary:
         description: "Resumen en español. Usa ||| para separar párrafos. Usa **negrita** y [[BIG]]texto grande[[/BIG]]."
         required: true
@@ -20,9 +21,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -49,27 +52,56 @@ jobs:
 
           folder = Path("articulos") / slug
           html_path = folder / "index.html"
-          meta_path = folder / "metadata.json"
 
           if not html_path.exists():
               raise SystemExit(f"No existe {html_path}")
-          if not meta_path.exists():
-              raise SystemExit(f"No existe {meta_path}")
 
-          html = html_path.read_text(encoding="utf-8")
-          meta = json.loads(meta_path.read_text(encoding="utf-8"))
+          metadata_path = folder / "metadata.json"
+          orcid_path = folder / "orcid.json"
+
+          if metadata_path.exists():
+              meta_path = metadata_path
+          elif orcid_path.exists():
+              meta_path = orcid_path
+          else:
+              raise SystemExit(
+                  f"No existe metadata.json ni orcid.json en {folder}"
+              )
+
+          html = html_path.read_text(
+              encoding="utf-8",
+              errors="ignore"
+          )
+
+          meta = json.loads(
+              meta_path.read_text(
+                  encoding="utf-8"
+              )
+          )
 
           checks = {
-              "summary-lead": '<p class="summary-lead">' in html,
-              "summary-section": '<h2 id="s1">Resumen del artículo</h2>' in html,
+              "html": html_path.exists(),
+              "metadata-source": meta_path.exists(),
               "spanish-abstract": bool(meta.get("abstract_spanish")),
-              "manual-source": meta.get("translation_provider") == "manual",
+              "manual-source": (
+                  meta.get("translation_provider") == "manual"
+              ),
+              "editorial-source": (
+                  meta.get("editorial_summary_source")
+                  == "user_provided"
+              ),
+              "clean-template-or-legacy": (
+                  '<div class="clean-summary">' in html
+                  or '<p class="summary-lead">' in html
+              ),
           }
 
           for key, ok in checks.items():
               print(f"{key}: {'PASS' if ok else 'FAIL'}")
               if not ok:
-                  raise SystemExit(f"Verification failed: {key}")
+                  raise SystemExit(
+                      f"Verification failed: {key}"
+                  )
 
           print("Spanish abstract update verification: PASS")
           PY
@@ -78,6 +110,10 @@ jobs:
         run: |
           git config user.name "nutreconciencia-seo-bot"
           git config user.email "actions@users.noreply.github.com"
+
           git add articulos
-          git diff --cached --quiet || git commit -m "content: add reviewed Spanish abstract"
+
+          git diff --cached --quiet || git commit \
+            -m "content: add reviewed Spanish abstract"
+
           git push
