@@ -1,7 +1,19 @@
 {
-  "title": "Food-environment policies for child nutrition in Ecuador and Latin America: beyond front-of-package labels and advertising restrictions",
+  "title": "Food-environment policies for child nutrition in Ecuador and Latin America: beyond front-of-package labels and advertising restrictions.",
   "year": "2026",
-  "journal": "The Lancet Regional Health - Americas",
+  "journal": "Lancet regional health. Americas",
+  "authors": [
+    "José Francisco López-Gil",
+    "Fiorella Quiroz-Cárdenas",
+    "Miguel López-Moreno"
+  ],
   "doi": "10.1016/j.lana.2026.101532",
-  "orcid": "0000-0003-0553-6210"
+  "pmid": "42375986",
+  "abstract": "Latin American countries have expanded front-of-package warning labels and restrictions on food marketing to children, yet childhood overweight and obesity continue to rise. Ultra-processed foods (UPFs) dominate retail and digital environments and remain embedded in school settings. Drawing on evidence from Ecuador and comparable middle-income settings, we argue that labeling and advertising policies are necessary but insufficient when healthier options remain unavailable, unaffordable, or outcompeted at point of sale. We outline complementary food-environment actions (e.g., school food environments, fiscal incentives for minimally processed foods, digital marketing regulation, and alignment with local food systems) within a framework that addresses commercial determinants of health and governance safeguards against industry capture. Protecting children requires shifting from restricting promotions alone to reshaping the systems that make unhealthy diets the default.",
+  "publication_types": [
+    "Journal Article",
+    "Review"
+  ],
+  "orcid": "0000-0003-0553-6210",
+  "orcid_work_id": "218124554"
 }
