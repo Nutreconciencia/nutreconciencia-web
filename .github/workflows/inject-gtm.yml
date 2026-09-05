@@ -1,0 +1,68 @@
+name: Install Google Tag Manager
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  inject:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Inject Google Tag Manager
+        run: |
+          python scripts/inject_gtm.py
+
+      - name: Verify GTM installation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          gtm_id = "GTM-KVG76QVX"
+          html_files = sorted(Path(".").rglob("*.html"))
+
+          missing = []
+
+          for path in html_files:
+              if ".git" in path.parts:
+                  continue
+
+              html = path.read_text(encoding="utf-8", errors="ignore")
+
+              if gtm_id not in html:
+                  missing.append(str(path))
+
+          print(f"HTML files checked: {len(html_files)}")
+
+          if missing:
+              print("Pages without GTM:")
+              for item in missing:
+                  print(f" - {item}")
+              raise SystemExit(1)
+
+          print("Google Tag Manager verification: PASS")
+          PY
+
+      - name: Commit changes
+        run: |
+          git config user.name "nutreconciencia-gtm-bot"
+          git config user.email "actions@users.noreply.github.com"
+
+          git add -- '*.html'
+
+          if git diff --cached --quiet; then
+            echo "No HTML changes detected."
+          else
+            git commit -m "analytics: install Google Tag Manager"
+            git push
+          fi
