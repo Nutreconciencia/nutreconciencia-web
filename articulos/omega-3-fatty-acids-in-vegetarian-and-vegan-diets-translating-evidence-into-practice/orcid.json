@@ -1,15 +1,18 @@
 {
-  "title": "Omega-3 Fatty Acids in Vegetarian and Vegan Diets: Translating Evidence into Practice",
+  "title": "Omega-3 fatty acids in vegetarian and vegan diets: Translating evidence into practice.",
   "year": "2026",
-  "journal": "Prostaglandins, Leukotrienes and Essential Fatty Acids",
+  "journal": "Prostaglandins, leukotrienes, and essential fatty acids",
   "authors": [
     "Ariel Kraselnik",
     "Miguel López-Moreno"
   ],
   "doi": "10.1016/j.plefa.2026.102769",
-  "pmid": "",
-  "abstract": "",
-  "publication_types": [],
+  "pmid": "42715777",
+  "abstract": "Vegetarian and vegan diets are consistently associated with reduced cardiometabolic risk, despite providing minimal amounts of long-chain omega-3 polyunsaturated fatty acids (n-3 PUFAs), key precursors of bioactive lipid mediators, raising questions about n-3 PUFA metabolism and requirements in plant-based populations. This review examines current evidence on the metabolic fate of alpha-linolenic acid (ALA), its conversion to eicosapentaenoic acid (EPA) and docosahexaenoic acid (DHA), and the implications for n-3 PUFA-derived signaling pathways. Although conversion efficiency is limited, it is influenced by dietary and non-dietary factors and may be supported by adaptive mechanisms that preserve tissue DHA. Individuals following plant-based diets exhibit lower EPA and DHA status, yet maintain favorable health profiles, suggesting that overall dietary context and endogenous regulation may mitigate reduced intake of preformed n-3 PUFAs. Targeted strategies, including optimizing ALA intake and using algae-derived EPA/DHA, effectively improve biomarker status. Understanding these mechanisms may help redefine n-3 PUFA requirements in plant-based populations.",
+  "publication_types": [
+    "Journal Article",
+    "Review"
+  ],
   "orcid": "0000-0003-0553-6210",
   "orcid_work_id": "225646856"
 }
