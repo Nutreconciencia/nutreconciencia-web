@@ -1,0 +1,19 @@
+{
+  "title": "Nutriomic Technologies for Characterizing, Diagnosing, Clustering and Managing Chronic Liver Diseases: Precision Nutrition Implications",
+  "year": "2026",
+  "journal": "International Journal of Molecular Sciences",
+  "authors": [
+    "Nuria Perez-Diaz-del-Campo",
+    "Miguel Lopez-Moreno",
+    "Begoña de Cuevillas",
+    "Diego Martinez-Urbistondo",
+    "J. Alfredo Martínez",
+    "Omar Ramos-Lopez"
+  ],
+  "doi": "10.3390/ijms27188106",
+  "pmid": "",
+  "abstract": "Chronic liver diseases are frequently accompanied by metabolic dysfunction, making precision nutrition relevant for prevention, diagnosis, risk stratification, and management. This review summarizes nutritional omics evidence in hepatology, emphasizing metabolic dysfunction-associated steatotic liver disease as a prevalent model. Nutrigenetics provides information on inherited susceptibility by identifying genetic variation affecting hepatic lipid handling, triglyceride export, phospholipid remodeling, and glucose-driven lipogenesis. Nutrigenomics characterizes transcriptional programs involved in hepatic lipogenesis, inflammation, oxidative stress, and fibrogenesis. Nutriepigenetics captures exposure memory through DNA methylation, histone regulation, and small-RNA signaling, including miR-122, miR-21, miR-34a, and miR-192; diet may modulate this layer through one-carbon metabolism, methyl-donor availability, oxidative stress, acetyl-CoA and NAD+-dependent pathways, and lipid peroxidation. Nutrimetagenomics highlight taxa such as Ruminococcus, Faecalibacterium, Veillonella, Bacteroides, Escherichia, and Klebsiella, but translation requires functional characterization beyond stool taxa. Nutrimetabolomics and lipidomics, including OWL-liver platforms, track dietary adherence, lipid species, bile acids, amino acids, lipoproteins, and biological non-response. Future progress will require AI-supported, phenotype-first integrated models tested in multiethnic longitudinal studies with standardized dietary assessment, biospecimen collection, meaningful liver endpoints, realistic workflows, and adaptive lifestyle-care strategies.",
+  "publication_types": [],
+  "orcid": "0000-0003-0553-6210",
+  "orcid_work_id": "226439444"
+}
