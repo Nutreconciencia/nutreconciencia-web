@@ -1,7 +1,21 @@
 {
-  "title": "Dietary interventions for metabolic dysfunctionassociated steatotic liver disease in children: Network meta-analysis of randomized clinical trials",
+  "title": "Dietary Interventions for Metabolic Dysfunction-Associated Steatotic Liver Disease in Children and Adolescents: A Network Meta-Analysis of Randomized Clinical Trials.",
   "year": "2026",
-  "journal": "",
+  "journal": "Nutrition reviews",
+  "authors": [
+    "Miguel López-Moreno",
+    "Nuria Perez-Diaz-Del-Campo",
+    "Alberto Roldán-Ruiz",
+    "Gabriele Bertotti",
+    "Desirée Victoria-Montesinos",
+    "José Francisco López-Gil"
+  ],
   "doi": "10.1093/nutrit/nuag135",
-  "orcid": "0000-0003-0553-6210"
+  "pmid": "42776576",
+  "abstract": "CONTEXT: Metabolic dysfunction-associated steatotic liver disease (MASLD) is the most prevalent chronic liver condition in children and adolescents, yet the comparative effectiveness of dietary strategies remains unclear. OBJECTIVE: To compare the effects of different dietary interventions on liver enzymes and metabolic outcomes in children and adolescents with MASLD using a frequentist network meta-analysis (NMA) of randomized clinical trials (RCTs). DATA SOURCES: The MEDLINE, Web of Science, Cochrane Library, and Scopus databases were searched from inception to December 2, 2024. Reference lists of relevant systematic reviews were also screened. DATA EXTRACTION: Eligible studies were RCTs including participants aged 2-19 years with MASLD and that compared dietary interventions and reported liver-related outcomes. Primary outcomes were alanine aminotransferase (ALT), aspartate aminotransferase (AST), and γ-glutamyl transferase (GGT) levels. Secondary outcomes included body mass index (BMI), Homeostasis Model Assessment of Insulin Resistance (HOMA-IR), and lipid profile. Two reviewers independently extracted study and outcome data, with discrepancies resolved by a third reviewer. Risk of bias was assessed using the Cochrane Risk of Bias Tool 2.0. DATA ANALYSIS: Eleven RCTs (n = 668; n = 22 intervention arms) were included. Random-effects NMA was performed using restricted maximum likelihood estimation, and treatment rankings were assessed using P scores. Pairwise analyses showed that low-fat diets significantly reduced ALT and AST levels compared with usual diets. In the NMA, no dietary pattern significantly outperformed others for improved liver enzyme values, although low-fat diets ranked as the intervention with the highest probability to be effective in improving ALT (71.5%), AST (74.1%), and GGT (77.3%) levels. Low-carbohydrate diets ranked highest for improving BMI (84.5%), HOMA-IR (84.5%), low-density lipoprotein cholesterol (71.4%), high-density lipoprotein cholesterol (67.4%), and total cholesterol (96.3%) values, whereas moderate diets ranked highest for improving triglyceride values (72.2%). CONCLUSIONS: Low-fat diets ranked highest for liver enzyme outcomes, whereas low-carbohydrate and moderate dietary patterns ranked highest for several metabolic outcomes. However, the low to very low certainty of evidence warrants cautious interpretation and confirmation in larger, methodologically homogeneous trials. SYSTEMATIC REVIEW REGISTRATION: PROSPERO (International Prospective Register of Systematic Reviews) registration no. CRD42024614131.",
+  "publication_types": [
+    "Journal Article"
+  ],
+  "orcid": "0000-0003-0553-6210",
+  "orcid_work_id": "223776775"
 }
