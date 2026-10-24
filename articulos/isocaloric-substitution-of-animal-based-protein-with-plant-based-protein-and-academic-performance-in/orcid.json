@@ -1,7 +1,7 @@
 {
-  "title": "Isocaloric substitution of animal-based protein with plant-based protein and academic performance in Spanish adolescents: The EHDLA study",
+  "title": "Isocaloric substitution of animal-based protein with plant-based protein and academic performance in Spanish adolescents: The EHDLA study.",
   "year": "2026",
-  "journal": "Pediatric Research",
+  "journal": "Pediatric research",
   "authors": [
     "José Francisco López-Gil",
     "Carlos Cristi-Montero",
@@ -15,9 +15,11 @@
     "Miguel López-Moreno"
   ],
   "doi": "10.1038/s41390-026-05552-w",
-  "pmid": "",
-  "abstract": "",
-  "publication_types": [],
+  "pmid": "42919830",
+  "abstract": "BACKGROUND: The source of dietary protein has been linked to cognitive outcomes; however, evidence on the association between isocaloric substitution of protein sources and academic performance in adolescents is limited. This study examined whether replacing animal-based protein with plant-based protein was associated with academic performance in adolescents. METHODS: This secondary analysis used data from the Eating Healthy and Daily Life Activities (EHDLA) study (n = 769; 55.5% girls; 12-17 years). Dietary intake was assessed using the 45-item food-frequency questionnaire. Academic performance was evaluated using grade point average and specific subjects (i.e., language, maths, and foreign language). Isocaloric substitution models were applied to estimate the association of replacing animal-based with plant-based protein, adjusting for relevant sociodemographic, lifestyle, and anthropometric factors. Robust linear regression was used. RESULTS: Replacing animal- with plant-based protein was consistently associated with higher academic performance across all outcomes (all p < 0.001). Substituting 5% of total energy intake was associated with higher grade point average and subject-specific scores. These associations were primarily driven by replacing protein from red/processed meat and certain fish with plant-based sources. CONCLUSIONS: Isocaloric substitution of animal-based protein with plant-based protein was associated with better academic performance in adolescents, highlighting the potential importance of protein source in dietary patterns related to educational outcomes. IMPACT: Replacing animal-based protein with plant-based protein is associated with better overall and subject-specific academic performance in adolescents. This is the first study to apply an isocaloric substitution approach to examine the association between protein source (plant vs. animal) and academic performance in adolescents. Dietary patterns with a higher contribution of red and processed meat protein (relative to plant protein) were associated with less favorable academic outcomes. These findings highlight the importance of protein quality within dietary patterns and may inform nutrition-based strategies to support academic achievement during adolescence.",
+  "publication_types": [
+    "Journal Article"
+  ],
   "orcid": "0000-0003-0553-6210",
   "orcid_work_id": "231028174"
 }
