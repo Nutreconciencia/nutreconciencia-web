@@ -1,7 +1,7 @@
 {
-  "title": "A 6-week vegan Mediterranean diet reduces neutrophil count and neutrophil-to-lymphocyte ratio compared with a traditional Mediterranean diet in women with fibromyalgia: a randomized controlled trial",
+  "title": "A 6-week vegan Mediterranean diet reduces neutrophil count and neutrophil-to-lymphocyte ratio compared with a traditional Mediterranean diet in women with fibromyalgia: a randomized controlled trial.",
   "year": "2026",
-  "journal": "Nutrition Research",
+  "journal": "Nutrition research (New York, N.Y.)",
   "authors": [
     "Siobhan Nicaudie",
     "Isabel Viña",
@@ -13,9 +13,11 @@
     "Miguel López-Moreno"
   ],
   "doi": "10.1016/j.nutres.2026.10.008",
-  "pmid": "",
-  "abstract": "",
-  "publication_types": [],
+  "pmid": "43044256",
+  "abstract": "Fibromyalgia (FM) is associated with a low-grade pro-inflammatory profile, reflected by elevated neutrophil counts and the neutrophil-to-lymphocyte ratio (NLR), that may impair function. Evidence on the effects of a vegan Mediterranean diet on inflammation, functional outcomes, and quality of life remains limited. This secondary analysis of a randomized controlled trial evaluated the effects of a 6-week vegan Mediterranean diet vs a traditional Mediterranean diet in women with FM on inflammatory and functional outcomes, with particular focus on NLR and functional performance. We hypothesized that a vegan Mediterranean diet would reduce neutrophil count and NLR more than a traditional Mediterranean diet in women with FM. Twenty-five women with FM were initially randomly assigned to either the traditional Mediterranean group (n = 12) or the vegan Mediterranean group (n = 13). Both diets were isocaloric and matched for macronutrient distribution. The outcomes evaluated included the NLR, white blood cell count, functional performance (Five-Times-Sit-To-Stand [FTSTS] and Timed Up and Go [TUG], kinesiophobia [Tampa Scale for Kinesiophobia], sleep quality [Pittsburgh Sleep Quality Index] and fatigue [Multidimensional Fatigue Inventory]). Compared to the traditional Mediterranean diet, the vegan Mediterranean diet significantly reduced NLR (P = .026; ES = 0.23) and neutrophil count (P = .037; ES = 0.21). However, no significant between-group differences were observed for kinesiophobia, sleep quality, fatigue or functional performance. A vegan Mediterranean diet improves systemic inflammatory profile, reflected by reductions in NLR and neutrophil count, in women with FM compared with a traditional Mediterranean diet. Longer-term studies are needed to confirm whether these changes translate into functional improvements.",
+  "publication_types": [
+    "Journal Article"
+  ],
   "orcid": "0000-0003-0553-6210",
   "orcid_work_id": "230894752"
 }
