@@ -1,15 +1,17 @@
 {
-  "title": "Rethinking dietary guidance: inconsistencies from the 2025 to 2030 Dietary Guidelines for Americans",
-  "year": "2027",
-  "journal": "Nutrition",
+  "title": "Rethinking dietary guidance: inconsistencies from the 2025 to 2030 Dietary Guidelines for Americans.",
+  "year": "2026",
+  "journal": "Nutrition (Burbank, Los Angeles County, Calif.)",
   "authors": [
     "Miguel López-Moreno",
     "José Francisco López-Gil"
   ],
   "doi": "10.1016/j.nut.2026.113455",
-  "pmid": "",
-  "abstract": "",
-  "publication_types": [],
+  "pmid": "43050801",
+  "abstract": "OBJECTIVE: The 2025 to 2030 Dietary Guidelines for Americans (DGA) have been presented as a reset of federal nutrition policy, emphasizing \"real food,\" nutrient density, and reductions in highly processed foods. This manuscript examines the internal coherence and evidentiary alignment of these Guidelines, with particular attention to how comparator choice and substitution-based frameworks shape the interpretation of food-based recommendations. METHODS: Drawing on evidence from randomized controlled trials, prospective cohort studies, and global burden of disease assessments, we argue that the estimated health effects of key food groups and nutrients, including red meat, dairy, legumes, saturated fat, and whole grains, are contingent on comparator choice and dietary context. RESULTS: The evidence indicates that the estimated health effects of individual food groups and nutrients are highly dependent on comparator choice and dietary context. Evaluating foods in isolation, or against heterogeneous comparators, may obscure important differences in cardiometabolic outcomes and long-term population health. A substitution-based perspective provides a more informative framework for interpretation the potential health effects of dietary changes and identifying inconsistencies across recommendations. CONCLUSION: Dietary guidelines should move beyond isolated food characteristics towards transparent, comparative, and substitution-based assessments of dietary effects.",
+  "publication_types": [
+    "Journal Article"
+  ],
   "orcid": "0000-0003-0553-6210",
   "orcid_work_id": "230992721"
 }
